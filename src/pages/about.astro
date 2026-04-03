@@ -1,0 +1,70 @@
+---
+import Base from '../layouts/Base.astro';
+
+const title = 'About — ZIPCodeDetails.com';
+const description = 'Learn about ZIPCodeDetails.com — a free, comprehensive US ZIP code reference platform powered by US Census Bureau data.';
+---
+
+<Base title={title} description={description}>
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-6">About ZIPCodeDetails.com</h1>
+
+    <div class="prose prose-slate max-w-none">
+      <p class="text-lg text-slate-600 leading-relaxed">
+        ZIPCodeDetails.com is a free, comprehensive reference platform for all 41,000+
+        ZIP codes in the United States. Our goal is to provide fast, accurate, and
+        easy-to-use postal code information for everyone.
+      </p>
+
+      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Our Data</h2>
+      <p class="text-slate-600 leading-relaxed">
+        All data on this site is sourced from the
+        <a href="https://www.census.gov/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">US Census Bureau</a>,
+        specifically the American Community Survey (ACS) 5-Year Estimates and Census
+        Gazetteer files. This includes:
+      </p>
+      <ul class="list-disc list-inside text-slate-600 space-y-2 mt-4">
+        <li>Population estimates from ACS 5-Year data</li>
+        <li>Median household income from ACS 5-Year data</li>
+        <li>Geographic coordinates and land/water area from Census Gazetteer</li>
+        <li>City, state, and county mapping from USPS/HUD crosswalk data</li>
+        <li>Time zone data derived from geographic coordinates</li>
+        <li>CBSA (Core Based Statistical Area) metropolitan designations</li>
+      </ul>
+
+      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Important Notes</h2>
+      <ul class="list-disc list-inside text-slate-600 space-y-2">
+        <li>
+          Population and income figures are <strong>statistical estimates</strong>,
+          not exact counts. They represent the Census Bureau's best approximation
+          based on survey sampling.
+        </li>
+        <li>
+          ZIP codes shown on this site are based on <strong>ZIP Code Tabulation Areas (ZCTAs)</strong>,
+          which approximate but do not exactly match USPS delivery route boundaries.
+        </li>
+        <li>
+          Some ZIP codes (especially PO Box or unique codes) may have limited
+          demographic data available.
+        </li>
+        <li>
+          Data is updated periodically as new Census Bureau estimates become available,
+          typically on an annual basis.
+        </li>
+      </ul>
+
+      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Free to Use</h2>
+      <p class="text-slate-600 leading-relaxed">
+        ZIPCodeDetails.com is completely free. We believe that public data from the
+        Census Bureau should be accessible to everyone in a clean, fast, and
+        user-friendly format. The site is supported by advertising.
+      </p>
+
+      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Contact</h2>
+      <p class="text-slate-600 leading-relaxed">
+        If you have questions, corrections, or feedback, please reach out via our
+        <a href="https://github.com/ilkukaya/zipcodedetails" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">GitHub repository</a>.
+      </p>
+    </div>
+  </div>
+</Base>

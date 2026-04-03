@@ -1,0 +1,116 @@
+---
+interface Props {
+  zipIncome: number | null;
+  zipLabel: string;
+  countyIncome?: number | null;
+  countyLabel?: string;
+  stateIncome?: number | null;
+  stateLabel?: string;
+  nationalIncome?: number;
+}
+
+const {
+  zipIncome,
+  zipLabel,
+  countyIncome = null,
+  countyLabel = 'County Avg',
+  stateIncome = null,
+  stateLabel = 'State Avg',
+  nationalIncome = 69021,
+} = Astro.props;
+
+const chartData = [
+  { label: zipLabel, value: zipIncome },
+  { label: countyLabel, value: countyIncome },
+  { label: stateLabel, value: stateIncome },
+  { label: 'US Average', value: nationalIncome },
+].filter((d) => d.value != null && d.value > 0);
+---
+
+<div class="income-chart-container">
+  <canvas
+    id="income-chart"
+    class="w-full"
+    style="max-height: 300px;"
+    data-chart={JSON.stringify(chartData)}
+  ></canvas>
+</div>
+
+<script>
+  function initChart() {
+    const canvas = document.getElementById('income-chart') as HTMLCanvasElement;
+    if (!canvas) return;
+
+    const data = JSON.parse(canvas.dataset.chart || '[]');
+    if (data.length === 0) return;
+
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js';
+    script.onload = () => {
+      const Chart = (window as any).Chart;
+      new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels: data.map((d: any) => d.label),
+          datasets: [
+            {
+              label: 'Median Household Income',
+              data: data.map((d: any) => d.value),
+              backgroundColor: [
+                '#1d4ed8',
+                '#3b82f6',
+                '#60a5fa',
+                '#93c5fd',
+              ],
+              borderRadius: 6,
+              maxBarThickness: 60,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx: any) => '$' + ctx.parsed.y.toLocaleString(),
+              },
+            },
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: (val: number) => '$' + (val / 1000).toFixed(0) + 'K',
+              },
+              grid: { color: '#f1f5f9' },
+            },
+            x: {
+              grid: { display: false },
+            },
+          },
+        },
+      });
+    };
+    document.head.appendChild(script);
+  }
+
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            initChart();
+            observer.disconnect();
+          }
+        });
+      },
+      { rootMargin: '200px' }
+    );
+    const el = document.getElementById('income-chart');
+    if (el) observer.observe(el);
+  } else {
+    initChart();
+  }
+</script>

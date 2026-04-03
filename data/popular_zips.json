@@ -1,0 +1,20 @@
+[
+  {
+    "zip": "90210",
+    "city": "Beverly Hills",
+    "state": "CA",
+    "population": 21741
+  },
+  {
+    "zip": "10001",
+    "city": "New York",
+    "state": "NY",
+    "population": 21102
+  },
+  {
+    "zip": "00501",
+    "city": "Holtsville",
+    "state": "NY",
+    "population": 0
+  }
+]

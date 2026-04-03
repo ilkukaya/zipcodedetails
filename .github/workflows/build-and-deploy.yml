@@ -1,0 +1,84 @@
+name: Build and Deploy zipcodedetails.com
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 15 1 *'  # Every year on January 15 at 06:00 UTC
+
+jobs:
+  build-data:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: pip install requests pandas haversine pytz
+
+      - name: Download Census Gazetteer and ACS data
+        run: python scripts/01_download_census.py
+        env:
+          CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
+
+      - name: Download USPS ZIP-City-State mapping
+        run: python scripts/02_download_usps.py
+
+      - name: Merge and enrich data
+        run: python scripts/03_merge_and_enrich.py
+
+      - name: Generate individual ZIP JSON files
+        run: python scripts/04_generate_json.py
+
+      - name: Generate index files
+        run: python scripts/05_generate_indexes.py
+
+      - name: Validate generated data
+        run: python scripts/06_validate.py
+
+      - name: Upload data artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: zip-data
+          path: |
+            data/zips/
+            data/state_index.json
+            data/city_index.json
+            data/search_index.json
+            data/popular_zips.json
+            public/search_index.json
+          retention-days: 7
+
+  build-site:
+    needs: build-data
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download data artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: zip-data
+          path: .
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build Astro site
+        run: npm run build
+
+      - name: Deploy to Netlify
+        uses: netlify/actions/cli@master
+        with:
+          args: deploy --prod --dir=dist
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}

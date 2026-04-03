@@ -1,0 +1,198 @@
+---
+import Base from '../layouts/Base.astro';
+import SearchBox from '../components/SearchBox.astro';
+import ZipCard from '../components/ZipCard.astro';
+import FAQSection from '../components/FAQSection.astro';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const stateIndex = JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), 'data', 'state_index.json'), 'utf-8')
+);
+
+const popularZips = JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), 'data', 'popular_zips.json'), 'utf-8')
+);
+
+const featuredZips = popularZips.slice(0, 12);
+
+const totalZips = Object.values(stateIndex).reduce((sum: number, s: any) => sum + (s.zip_count || 0), 0);
+const totalStates = Object.keys(stateIndex).length;
+
+const title = 'ZIP Code Details — Free US Postal Code Lookup | ZIPCodeDetails.com';
+const description = `Search any of the ${totalZips.toLocaleString()}+ ZIP codes in the United States. Free demographics, population, income, and location data for every US ZIP code.`;
+
+const faqs = [
+  {
+    question: 'What is a ZIP code?',
+    answer: 'A ZIP code (Zone Improvement Plan code) is a postal code used by the United States Postal Service (USPS). Introduced in 1963, ZIP codes help the USPS efficiently route and deliver mail. The basic format is five digits (e.g., 90210), though an extended ZIP+4 format adds four more digits for more precise locations.',
+  },
+  {
+    question: 'How do I find my ZIP code?',
+    answer: 'You can find your ZIP code by using the search box above. Simply type your city name, state, or address, and we will show matching ZIP codes. You can also search by ZIP code number directly to see its associated city and state.',
+  },
+  {
+    question: 'What information does a ZIP code contain?',
+    answer: 'Each ZIP code is associated with a primary city, state, and county. Through Census Bureau data, we can also determine population, median household income, land area, geographic coordinates, time zone, and metro area (CBSA) for each ZIP code tabulation area.',
+  },
+  {
+    question: 'Are ZIP codes the same as ZIP+4?',
+    answer: 'No. A standard ZIP code is 5 digits and covers a general geographic area. ZIP+4 codes add four extra digits to pinpoint a specific delivery segment, such as a city block, building, or PO Box group. This site focuses on the standard 5-digit ZIP codes.',
+  },
+  {
+    question: 'How accurate is this data?',
+    answer: 'Our data is sourced from the US Census Bureau American Community Survey (ACS) 5-Year Estimates and Census Gazetteer files. Population and income figures are statistical estimates, not exact counts. Geographic boundaries are based on ZIP Code Tabulation Areas (ZCTAs), which approximate but do not exactly match USPS delivery routes.',
+  },
+];
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.question,
+    acceptedAnswer: { '@type': 'Answer', text: f.answer },
+  })),
+};
+
+const websiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'ZIPCodeDetails.com',
+  url: 'https://zipcodedetails.com',
+  description: 'Free, comprehensive US ZIP code lookup with demographics and location data.',
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: 'https://zipcodedetails.com/search?q={search_term_string}',
+    'query-input': 'required name=search_term_string',
+  },
+};
+
+const stateEntries = Object.entries(stateIndex).sort((a: any, b: any) => a[1].name.localeCompare(b[1].name));
+---
+
+<Base title={title} description={description} jsonLd={[faqSchema, websiteSchema]}>
+  <!-- Hero Section -->
+  <section class="bg-gradient-to-br from-primary-dark via-primary to-blue-600 text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
+      <div class="text-center max-w-3xl mx-auto">
+        <h1 class="text-3xl sm:text-5xl font-bold mb-4 leading-tight">
+          ZIP Code Details — Free US Postal Code Lookup
+        </h1>
+        <p class="text-lg sm:text-xl text-blue-100 mb-8">
+          Search any of the {totalZips.toLocaleString()}+ ZIP codes in the United States
+        </p>
+        <SearchBox size="large" />
+        <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm text-blue-200">
+          <span>Popular:</span>
+          {['90210', '10001', '60601', '77001', '33101'].map((z) => (
+            <a href={`/zip/${z}`} class="bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full transition-colors">
+              {z}
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Bar -->
+  <section class="bg-white border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
+        <div>
+          <p class="text-2xl font-black text-primary tabular-nums">{totalZips.toLocaleString()}</p>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mt-1">ZIP Codes</p>
+        </div>
+        <div>
+          <p class="text-2xl font-black text-primary tabular-nums">{totalStates}</p>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mt-1">States</p>
+        </div>
+        <div>
+          <p class="text-2xl font-black text-primary tabular-nums">3,143</p>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mt-1">Counties</p>
+        </div>
+        <div>
+          <p class="text-2xl font-black text-accent tabular-nums">Free</p>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mt-1">Forever</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Featured ZIP Codes -->
+    <section class="mb-16">
+      <h2 class="text-2xl font-semibold text-slate-900 mb-6">Featured ZIP Codes</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {featuredZips.map((z: any) => (
+          <ZipCard
+            zip={z.zip}
+            city={z.city}
+            state={z.state}
+            population={z.population}
+          />
+        ))}
+      </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="mb-16">
+      <h2 class="text-2xl font-semibold text-slate-900 mb-6 text-center">How It Works</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="text-center">
+          <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+            <svg class="w-6 h-6 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </div>
+          <h3 class="font-semibold text-slate-900 mb-2">1. Search</h3>
+          <p class="text-sm text-slate-500">Enter a ZIP code, city name, or state to find matching postal codes instantly.</p>
+        </div>
+        <div class="text-center">
+          <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+            <svg class="w-6 h-6 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" />
+            </svg>
+          </div>
+          <h3 class="font-semibold text-slate-900 mb-2">2. View Demographics</h3>
+          <p class="text-sm text-slate-500">See population, income, area, time zone, and county data for any ZIP code.</p>
+        </div>
+        <div class="text-center">
+          <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+            <svg class="w-6 h-6 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+            </svg>
+          </div>
+          <h3 class="font-semibold text-slate-900 mb-2">3. Use The Data</h3>
+          <p class="text-sm text-slate-500">Compare neighborhoods, plan a move, or research demographics for free.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Browse by State -->
+    <section class="mb-16">
+      <h2 class="text-2xl font-semibold text-slate-900 mb-6">Browse ZIP Codes by State</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        {stateEntries.map(([abbr, info]: [string, any]) => (
+          <a
+            href={`/state/${abbr.toLowerCase()}`}
+            class="flex items-center justify-between bg-white rounded-lg border border-slate-200 px-4 py-3 hover:border-primary/30 hover:shadow-sm transition-all group no-underline"
+          >
+            <span class="text-sm font-medium text-slate-700 group-hover:text-primary transition-colors">{info.name}</span>
+            <span class="text-xs text-slate-400 tabular-nums">{info.zip_count?.toLocaleString()}</span>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <FAQSection faqs={faqs} />
+
+    <!-- Census Attribution -->
+    <div class="mt-12 text-center">
+      <p class="text-xs text-slate-400">
+        Data sourced from <a href="https://www.census.gov/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">US Census Bureau</a> American Community Survey (ACS) 5-Year Estimates &middot; Free to use
+      </p>
+    </div>
+  </div>
+</Base>

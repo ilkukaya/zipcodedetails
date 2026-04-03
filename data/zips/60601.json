@@ -1,0 +1,19 @@
+{
+  "zip": "60601",
+  "city": "Chicago",
+  "state": "IL",
+  "state_full": "Illinois",
+  "county": "Cook County",
+  "cbsa": "Chicago-Naperville-Elgin, IL-IN-WI",
+  "cbsa_code": "16980",
+  "population": 15688,
+  "median_household_income": 102344,
+  "land_area_sqmi": 0.58,
+  "water_area_sqmi": 0.56,
+  "lat": 41.8862,
+  "lng": -87.6186,
+  "timezone": "America/Chicago",
+  "dst": true,
+  "zip_type": "STANDARD",
+  "surrounding_zips": ["60602", "60605", "60611", "60616", "60610"]
+}

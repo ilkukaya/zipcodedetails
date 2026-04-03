@@ -1,0 +1,245 @@
+---
+import fs from 'node:fs';
+import path from 'node:path';
+import Base from '../../layouts/Base.astro';
+import StatBlock from '../../components/StatBlock.astro';
+import BreadcrumbSchema from '../../components/BreadcrumbSchema.astro';
+import MiniMap from '../../components/MiniMap.astro';
+import NearbyZips from '../../components/NearbyZips.astro';
+import IncomeChart from '../../components/IncomeChart.astro';
+import FAQSection from '../../components/FAQSection.astro';
+import AdSenseUnit from '../../components/AdSenseUnit.astro';
+import { formatNumber, formatCurrency, formatArea, formatCoordinates, getTimezoneAbbr, getTimezoneName } from '../../lib/formatters';
+import { zipPageTitle, zipPageDescription } from '../../lib/seo';
+
+export function getStaticPaths() {
+  const zipsDir = path.join(process.cwd(), 'data', 'zips');
+  const files = fs.readdirSync(zipsDir).filter((f: string) => f.endsWith('.json'));
+  return files.map((file: string) => {
+    const code = file.replace('.json', '');
+    const raw = fs.readFileSync(path.join(zipsDir, file), 'utf-8');
+    const data = JSON.parse(raw);
+    return { params: { code }, props: { data } };
+  });
+}
+
+const { data } = Astro.props;
+
+const title = zipPageTitle(data);
+const description = zipPageDescription(data);
+
+const siteUrl = 'https://zipcodedetails.com';
+
+const breadcrumbs = [
+  { name: 'Home', url: siteUrl },
+  { name: data.state_full, url: `${siteUrl}/state/${data.state.toLowerCase()}` },
+  { name: data.county, url: `${siteUrl}/state/${data.state.toLowerCase()}` },
+  { name: `ZIP ${data.zip}`, url: `${siteUrl}/zip/${data.zip}` },
+];
+
+const faqs = [
+  {
+    question: `What city is ZIP code ${data.zip} in?`,
+    answer: `ZIP code ${data.zip} is located in ${data.city}, ${data.state_full}.`,
+  },
+  {
+    question: `What time zone is ZIP ${data.zip}?`,
+    answer: `ZIP code ${data.zip} is in the ${getTimezoneName(data.timezone)} zone (${data.timezone}).${data.dst ? ' Daylight Saving Time is observed.' : ' Daylight Saving Time is NOT observed.'}`,
+  },
+  {
+    question: `What county is ${data.zip} in?`,
+    answer: `ZIP code ${data.zip} is in ${data.county}, ${data.state_full}.`,
+  },
+  {
+    question: `What is the population of ZIP code ${data.zip}?`,
+    answer: data.population != null
+      ? `The estimated population of ZIP code ${data.zip} is ${formatNumber(data.population)}, based on US Census Bureau data.`
+      : `Population data is not available for ZIP code ${data.zip}.`,
+  },
+  {
+    question: `What is the median household income in ZIP ${data.zip}?`,
+    answer: data.median_household_income != null
+      ? `The median household income in ZIP code ${data.zip} is ${formatCurrency(data.median_household_income)}, according to American Community Survey estimates.`
+      : `Median household income data is not available for ZIP code ${data.zip}.`,
+  },
+];
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.question,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: f.answer,
+    },
+  })),
+};
+
+const placeSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Place',
+  name: `ZIP Code ${data.zip} — ${data.city}, ${data.state}`,
+  address: {
+    '@type': 'PostalAddress',
+    postalCode: data.zip,
+    addressLocality: data.city,
+    addressRegion: data.state,
+    addressCountry: 'US',
+  },
+  geo: {
+    '@type': 'GeoCoordinates',
+    latitude: data.lat,
+    longitude: data.lng,
+  },
+};
+
+const tzAbbr = getTimezoneAbbr(data.timezone);
+const tzName = getTimezoneName(data.timezone);
+---
+
+<Base title={title} description={description} jsonLd={[faqSchema, placeSchema]}>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <BreadcrumbSchema items={breadcrumbs} />
+
+    <div class="mb-8">
+      <h1 class="text-3xl sm:text-4xl font-bold text-slate-900">
+        ZIP Code {data.zip} — {data.city}, {data.state}
+      </h1>
+      <p class="text-slate-500 mt-2">
+        Detailed demographics and location data for ZIP {data.zip}
+      </p>
+    </div>
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <StatBlock
+        label="Population"
+        value={formatNumber(data.population)}
+        icon='<svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
+      />
+      <StatBlock
+        label="Median Income"
+        value={formatCurrency(data.median_household_income)}
+        accent={true}
+        icon='<svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>'
+      />
+      <StatBlock
+        label="Land Area"
+        value={formatArea(data.land_area_sqmi)}
+        icon='<svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>'
+      />
+      <StatBlock
+        label="Time Zone"
+        value={`${tzName} (${tzAbbr})`}
+        icon='<svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'
+      />
+    </div>
+
+    <AdSenseUnit slot="zip-top-leaderboard" format="horizontal" />
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+      <div class="lg:col-span-2 space-y-8">
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <h2 class="text-xl font-semibold text-slate-900 mb-4">Location Details</h2>
+          <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+            <div>
+              <dt class="text-xs font-medium text-slate-500 uppercase tracking-wider">City</dt>
+              <dd class="text-sm font-semibold text-slate-800 mt-1">{data.city}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-slate-500 uppercase tracking-wider">State</dt>
+              <dd class="text-sm font-semibold text-slate-800 mt-1">
+                <a href={`/state/${data.state.toLowerCase()}`} class="text-primary hover:underline">
+                  {data.state_full} ({data.state})
+                </a>
+              </dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-slate-500 uppercase tracking-wider">County</dt>
+              <dd class="text-sm font-semibold text-slate-800 mt-1">{data.county}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-slate-500 uppercase tracking-wider">Metro Area (CBSA)</dt>
+              <dd class="text-sm font-semibold text-slate-800 mt-1">{data.cbsa || 'N/A'}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-slate-500 uppercase tracking-wider">Coordinates</dt>
+              <dd class="text-sm font-semibold text-slate-800 mt-1">{formatCoordinates(data.lat, data.lng)}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-slate-500 uppercase tracking-wider">DST Observed</dt>
+              <dd class="text-sm font-semibold text-slate-800 mt-1">{data.dst ? 'Yes' : 'No'}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-slate-500 uppercase tracking-wider">ZIP Type</dt>
+              <dd class="text-sm font-semibold text-slate-800 mt-1">{data.zip_type || 'Standard'}</dd>
+            </div>
+            {data.water_area_sqmi != null && (
+              <div>
+                <dt class="text-xs font-medium text-slate-500 uppercase tracking-wider">Water Area</dt>
+                <dd class="text-sm font-semibold text-slate-800 mt-1">{formatArea(data.water_area_sqmi)}</dd>
+              </div>
+            )}
+          </dl>
+        </section>
+
+        {data.median_household_income != null && data.median_household_income > 0 && (
+          <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h2 class="text-xl font-semibold text-slate-900 mb-4">Income Comparison</h2>
+            <IncomeChart
+              zipIncome={data.median_household_income}
+              zipLabel={`ZIP ${data.zip}`}
+              countyLabel={data.county}
+              stateLabel={data.state_full}
+            />
+          </section>
+        )}
+
+        <AdSenseUnit slot="zip-mid-rectangle" format="rectangle" />
+
+        <NearbyZips zips={data.surrounding_zips || []} />
+
+        <FAQSection faqs={faqs} />
+      </div>
+
+      <aside class="space-y-6">
+        <MiniMap lat={data.lat} lng={data.lng} zip={data.zip} city={`${data.city}, ${data.state}`} />
+
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+          <h3 class="text-sm font-semibold text-slate-800 mb-3">Quick Facts</h3>
+          <ul class="space-y-2 text-sm text-slate-600">
+            <li class="flex justify-between">
+              <span class="text-slate-500">ZIP Code</span>
+              <span class="font-semibold">{data.zip}</span>
+            </li>
+            <li class="flex justify-between border-t border-slate-100 pt-2">
+              <span class="text-slate-500">City</span>
+              <span class="font-semibold">{data.city}</span>
+            </li>
+            <li class="flex justify-between border-t border-slate-100 pt-2">
+              <span class="text-slate-500">State</span>
+              <span class="font-semibold">{data.state}</span>
+            </li>
+            <li class="flex justify-between border-t border-slate-100 pt-2">
+              <span class="text-slate-500">County</span>
+              <span class="font-semibold">{data.county}</span>
+            </li>
+            {data.cbsa_code && (
+              <li class="flex justify-between border-t border-slate-100 pt-2">
+                <span class="text-slate-500">CBSA Code</span>
+                <span class="font-semibold">{data.cbsa_code}</span>
+              </li>
+            )}
+          </ul>
+        </div>
+
+        <div class="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl border border-primary/20 p-5">
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Data sourced from the <a href="https://www.census.gov/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">US Census Bureau</a> American Community Survey (ACS) 5-Year Estimates. Population and income figures are estimates and may differ from actual counts.
+          </p>
+        </div>
+      </aside>
+    </div>
+  </div>
+</Base>

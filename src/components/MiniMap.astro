@@ -1,0 +1,89 @@
+---
+interface Props {
+  lat: number;
+  lng: number;
+  zip: string;
+  city: string;
+}
+
+const { lat, lng, zip, city } = Astro.props;
+---
+
+<div class="mini-map-container">
+  <div
+    id="mini-map"
+    class="w-full h-64 rounded-xl border border-slate-200 bg-slate-100"
+    data-lat={lat}
+    data-lng={lng}
+    data-zip={zip}
+    data-city={city}
+  >
+    <div class="flex items-center justify-center h-full text-slate-400 text-sm" id="map-placeholder">
+      <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+        <circle cx="12" cy="10" r="3" />
+      </svg>
+      Loading map...
+    </div>
+  </div>
+</div>
+
+<script>
+  function initMap() {
+    const container = document.getElementById('mini-map');
+    if (!container) return;
+
+    const lat = parseFloat(container.dataset.lat || '0');
+    const lng = parseFloat(container.dataset.lng || '0');
+    const zip = container.dataset.zip || '';
+    const city = container.dataset.city || '';
+
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(link);
+
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.onload = () => {
+      const placeholder = document.getElementById('map-placeholder');
+      if (placeholder) placeholder.remove();
+
+      const L = (window as any).L;
+      const map = L.map('mini-map', {
+        scrollWheelZoom: false,
+        zoomControl: true,
+        attributionControl: true,
+      }).setView([lat, lng], 12);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 18,
+      }).addTo(map);
+
+      L.marker([lat, lng])
+        .addTo(map)
+        .bindPopup(`<strong>ZIP ${zip}</strong><br>${city}`)
+        .openPopup();
+    };
+    document.head.appendChild(script);
+  }
+
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            initMap();
+            observer.disconnect();
+          }
+        });
+      },
+      { rootMargin: '200px' }
+    );
+    const el = document.getElementById('mini-map');
+    if (el) observer.observe(el);
+  } else {
+    initMap();
+  }
+</script>

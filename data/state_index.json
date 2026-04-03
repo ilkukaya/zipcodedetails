@@ -1,0 +1,28 @@
+{
+  "CA": {
+    "name": "California",
+    "abbreviation": "CA",
+    "zip_count": 1,
+    "population": 21741,
+    "zips": [
+      "90210"
+    ],
+    "cities": [
+      "Beverly Hills"
+    ]
+  },
+  "NY": {
+    "name": "New York",
+    "abbreviation": "NY",
+    "zip_count": 2,
+    "population": 21102,
+    "zips": [
+      "10001",
+      "00501"
+    ],
+    "cities": [
+      "New York",
+      "Holtsville"
+    ]
+  }
+}

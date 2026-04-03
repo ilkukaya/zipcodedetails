@@ -1,0 +1,179 @@
+---
+import fs from 'node:fs';
+import path from 'node:path';
+import Base from '../../layouts/Base.astro';
+import BreadcrumbSchema from '../../components/BreadcrumbSchema.astro';
+import SearchBox from '../../components/SearchBox.astro';
+import ZipCard from '../../components/ZipCard.astro';
+import StatBlock from '../../components/StatBlock.astro';
+import AdSenseUnit from '../../components/AdSenseUnit.astro';
+import StateMap from '../../components/StateMap.astro';
+import { formatNumber, formatCurrency, citySlug } from '../../lib/formatters';
+import { statePageTitle, statePageDescription } from '../../lib/seo';
+
+export function getStaticPaths() {
+  const stateIndex = JSON.parse(
+    fs.readFileSync(path.join(process.cwd(), 'data', 'state_index.json'), 'utf-8')
+  );
+  return Object.entries(stateIndex).map(([abbr, info]: [string, any]) => ({
+    params: { state: abbr.toLowerCase() },
+    props: { abbr: abbr.toUpperCase(), info },
+  }));
+}
+
+const { abbr, info } = Astro.props;
+const siteUrl = 'https://zipcodedetails.com';
+
+const title = statePageTitle(info.name, abbr, info.zip_count || info.zips?.length || 0);
+const description = statePageDescription(info.name, info.zip_count || info.zips?.length || 0);
+
+const breadcrumbs = [
+  { name: 'Home', url: siteUrl },
+  { name: info.name, url: `${siteUrl}/state/${abbr.toLowerCase()}` },
+];
+
+// Load zip data for this state
+const zipsDir = path.join(process.cwd(), 'data', 'zips');
+const stateZips: any[] = [];
+for (const z of (info.zips || [])) {
+  const fp = path.join(zipsDir, `${z}.json`);
+  try {
+    if (fs.existsSync(fp)) {
+      stateZips.push(JSON.parse(fs.readFileSync(fp, 'utf-8')));
+    }
+  } catch { /* skip */ }
+}
+
+// Calculate state-level stats from available data
+const totalPop = stateZips.reduce((s, z) => s + (z.population || 0), 0);
+const incomes = stateZips.filter((z) => z.median_household_income != null && z.median_household_income > 0).map((z) => z.median_household_income);
+const avgIncome = incomes.length > 0 ? Math.round(incomes.reduce((a: number, b: number) => a + b, 0) / incomes.length) : null;
+
+// Get unique cities
+const cities = [...new Set(stateZips.map((z) => z.city))].sort();
+const topCities = cities.slice(0, 20);
+
+// Pagination
+const ITEMS_PER_PAGE = 100;
+const allZipCodes = info.zips || [];
+---
+
+<Base title={title} description={description}>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <BreadcrumbSchema items={breadcrumbs} />
+
+    <div class="mb-8">
+      <h1 class="text-3xl sm:text-4xl font-bold text-slate-900">
+        {info.name} ZIP Codes — Complete List
+      </h1>
+      <p class="text-slate-500 mt-2">
+        All {formatNumber(info.zip_count || allZipCodes.length)} ZIP codes in the state of {info.name}
+      </p>
+    </div>
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <StatBlock
+        label="ZIP Codes"
+        value={formatNumber(info.zip_count || allZipCodes.length)}
+      />
+      <StatBlock
+        label="Cities"
+        value={formatNumber(cities.length || info.cities?.length || 0)}
+      />
+      <StatBlock
+        label="Population"
+        value={totalPop > 0 ? formatNumber(totalPop) : formatNumber(info.population)}
+      />
+      <StatBlock
+        label="Avg. Income"
+        value={avgIncome ? formatCurrency(avgIncome) : 'N/A'}
+        accent={true}
+      />
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div class="lg:col-span-2 space-y-8">
+        <AdSenseUnit slot="state-top-leaderboard" format="horizontal" />
+
+        {topCities.length > 0 && (
+          <section>
+            <h2 class="text-xl font-semibold text-slate-900 mb-4">Major Cities in {info.name}</h2>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {(topCities.length > 0 ? topCities : info.cities || []).map((city: string) => (
+                <a
+                  href={`/city/${citySlug(city, abbr)}`}
+                  class="bg-white rounded-lg border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 hover:text-primary hover:border-primary/30 hover:shadow-sm transition-all no-underline"
+                >
+                  {city}
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <section>
+          <h2 class="text-xl font-semibold text-slate-900 mb-4">All ZIP Codes in {info.name}</h2>
+          <div class="mb-4">
+            <SearchBox size="small" placeholder={`Search ZIP codes in ${info.name}...`} />
+          </div>
+
+          {stateZips.length > 0 ? (
+            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr class="bg-slate-50 border-b border-slate-200">
+                      <th class="text-left px-4 py-3 font-semibold text-slate-700">ZIP</th>
+                      <th class="text-left px-4 py-3 font-semibold text-slate-700">City</th>
+                      <th class="text-left px-4 py-3 font-semibold text-slate-700 hidden sm:table-cell">County</th>
+                      <th class="text-right px-4 py-3 font-semibold text-slate-700">Population</th>
+                      <th class="text-right px-4 py-3 font-semibold text-slate-700 hidden md:table-cell">Income</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stateZips.sort((a, b) => a.zip.localeCompare(b.zip)).map((z) => (
+                      <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                        <td class="px-4 py-3">
+                          <a href={`/zip/${z.zip}`} class="text-primary font-semibold hover:underline">{z.zip}</a>
+                        </td>
+                        <td class="px-4 py-3 text-slate-700">{z.city}</td>
+                        <td class="px-4 py-3 text-slate-500 hidden sm:table-cell">{z.county}</td>
+                        <td class="px-4 py-3 text-right tabular-nums text-slate-700">{formatNumber(z.population)}</td>
+                        <td class="px-4 py-3 text-right tabular-nums text-slate-700 hidden md:table-cell">{formatCurrency(z.median_household_income)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div class="bg-white rounded-xl border border-slate-200 p-8 text-center">
+              <p class="text-slate-500 text-sm">
+                ZIP code data for {info.name} will be available after the full data build.
+                This state has approximately {formatNumber(info.zip_count || allZipCodes.length)} ZIP codes.
+              </p>
+              <div class="mt-4 flex flex-wrap justify-center gap-2">
+                {allZipCodes.slice(0, 20).map((z: string) => (
+                  <a href={`/zip/${z}`} class="text-primary text-sm font-medium hover:underline">{z}</a>
+                ))}
+                {allZipCodes.length > 20 && (
+                  <span class="text-slate-400 text-sm">and {(allZipCodes.length - 20).toLocaleString()} more...</span>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+      </div>
+
+      <aside class="space-y-6">
+        <StateMap state={abbr} stateFull={info.name} />
+
+        <div class="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl border border-primary/20 p-5">
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Data sourced from the <a href="https://www.census.gov/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">US Census Bureau</a>. Population and income figures are estimates from the American Community Survey.
+          </p>
+        </div>
+      </aside>
+    </div>
+  </div>
+</Base>

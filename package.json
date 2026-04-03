@@ -1,0 +1,22 @@
+{
+  "name": "zipcodedetails",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Comprehensive US ZIP code reference platform — demographics, location data, and more for 41,000+ ZIP codes",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "astro": "^5.7.10",
+    "@astrojs/tailwind": "^6.0.2",
+    "tailwindcss": "^3.4.17"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.2",
+    "typescript": "^5.8.3"
+  }
+}

@@ -1,0 +1,61 @@
+---
+import Base from '../layouts/Base.astro';
+import SearchBox from '../components/SearchBox.astro';
+
+const title = 'Search ZIP Codes — ZIPCodeDetails.com';
+const description = 'Search any US ZIP code by number, city, or state. Find demographics, population, income, and location data for any postal code.';
+---
+
+<Base title={title} description={description}>
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="text-center mb-8">
+      <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Search ZIP Codes</h1>
+      <p class="text-slate-500">
+        Enter a ZIP code, city name, or state to find postal code details
+      </p>
+    </div>
+
+    <SearchBox size="large" />
+
+    <div class="mt-12">
+      <h2 class="text-lg font-semibold text-slate-900 mb-4 text-center">Popular Searches</h2>
+      <div class="flex flex-wrap justify-center gap-3">
+        {[
+          { zip: '90210', label: '90210 — Beverly Hills, CA' },
+          { zip: '10001', label: '10001 — New York, NY' },
+          { zip: '60601', label: '60601 — Chicago, IL' },
+          { zip: '77001', label: '77001 — Houston, TX' },
+          { zip: '33101', label: '33101 — Miami, FL' },
+          { zip: '98101', label: '98101 — Seattle, WA' },
+          { zip: '30301', label: '30301 — Atlanta, GA' },
+          { zip: '02101', label: '02101 — Boston, MA' },
+          { zip: '85001', label: '85001 — Phoenix, AZ' },
+          { zip: '80201', label: '80201 — Denver, CO' },
+        ].map((item) => (
+          <a
+            href={`/zip/${item.zip}`}
+            class="bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm text-slate-700 hover:border-primary/30 hover:text-primary hover:shadow-sm transition-all no-underline"
+          >
+            {item.label}
+          </a>
+        ))}
+      </div>
+    </div>
+
+    <div class="mt-16 text-center">
+      <h2 class="text-lg font-semibold text-slate-900 mb-4">Browse by State</h2>
+      <p class="text-sm text-slate-500 mb-6">
+        Or browse all ZIP codes organized by state
+      </p>
+      <a
+        href="/"
+        class="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-dark transition-colors"
+      >
+        View All States
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </a>
+    </div>
+  </div>
+</Base>

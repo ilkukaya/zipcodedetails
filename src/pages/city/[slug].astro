@@ -1,0 +1,142 @@
+---
+import fs from 'node:fs';
+import path from 'node:path';
+import Base from '../../layouts/Base.astro';
+import BreadcrumbSchema from '../../components/BreadcrumbSchema.astro';
+import ZipCard from '../../components/ZipCard.astro';
+import StatBlock from '../../components/StatBlock.astro';
+import AdSenseUnit from '../../components/AdSenseUnit.astro';
+import { formatNumber, formatCurrency, citySlug } from '../../lib/formatters';
+import { cityPageTitle, cityPageDescription } from '../../lib/seo';
+
+export function getStaticPaths() {
+  const cityIndex = JSON.parse(
+    fs.readFileSync(path.join(process.cwd(), 'data', 'city_index.json'), 'utf-8')
+  );
+  return Object.entries(cityIndex).map(([key, info]: [string, any]) => {
+    const slug = citySlug(info.city, info.state);
+    return {
+      params: { slug },
+      props: { info },
+    };
+  });
+}
+
+const { info } = Astro.props;
+const siteUrl = 'https://zipcodedetails.com';
+
+const title = cityPageTitle(info.city, info.state);
+const stateFull = info.state_full || info.state;
+const description = cityPageDescription(info.city, stateFull, info.zips?.length || 0);
+
+const breadcrumbs = [
+  { name: 'Home', url: siteUrl },
+  { name: stateFull, url: `${siteUrl}/state/${info.state.toLowerCase()}` },
+  { name: `${info.city}, ${info.state}`, url: `${siteUrl}/city/${citySlug(info.city, info.state)}` },
+];
+
+// Load zip data for this city
+const zipsDir = path.join(process.cwd(), 'data', 'zips');
+const cityZips: any[] = [];
+for (const z of (info.zips || [])) {
+  const fp = path.join(zipsDir, `${z}.json`);
+  try {
+    if (fs.existsSync(fp)) {
+      cityZips.push(JSON.parse(fs.readFileSync(fp, 'utf-8')));
+    }
+  } catch { /* skip */ }
+}
+
+const totalPop = cityZips.reduce((s, z) => s + (z.population || 0), 0) || info.population || 0;
+const incomes = cityZips.filter((z) => z.median_household_income != null && z.median_household_income > 0).map((z) => z.median_household_income);
+const avgIncome = incomes.length > 0 ? Math.round(incomes.reduce((a: number, b: number) => a + b, 0) / incomes.length) : null;
+---
+
+<Base title={title} description={description}>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <BreadcrumbSchema items={breadcrumbs} />
+
+    <div class="mb-8">
+      <h1 class="text-3xl sm:text-4xl font-bold text-slate-900">
+        {info.city}, {info.state} ZIP Codes
+      </h1>
+      <p class="text-slate-500 mt-2">
+        All ZIP codes serving {info.city}, {stateFull}
+      </p>
+    </div>
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <StatBlock
+        label="ZIP Codes"
+        value={formatNumber(info.zips?.length || 0)}
+      />
+      <StatBlock
+        label="Population"
+        value={formatNumber(totalPop)}
+      />
+      <StatBlock
+        label="Avg. Income"
+        value={avgIncome ? formatCurrency(avgIncome) : 'N/A'}
+        accent={true}
+      />
+      <StatBlock
+        label="County"
+        value={info.county || 'N/A'}
+      />
+    </div>
+
+    <AdSenseUnit slot="city-top-leaderboard" format="horizontal" />
+
+    <section class="mt-8">
+      <h2 class="text-xl font-semibold text-slate-900 mb-4">
+        All {formatNumber(info.zips?.length || 0)} ZIP Codes in {info.city}, {info.state}
+      </h2>
+
+      {cityZips.length > 0 ? (
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {cityZips.sort((a, b) => a.zip.localeCompare(b.zip)).map((z) => (
+            <ZipCard
+              zip={z.zip}
+              city={z.city}
+              state={z.state}
+              population={z.population}
+              income={z.median_household_income}
+              county={z.county}
+            />
+          ))}
+        </div>
+      ) : (
+        <div class="bg-white rounded-xl border border-slate-200 p-8">
+          <p class="text-slate-500 text-sm mb-4">
+            Detailed ZIP code data for {info.city} will be available after the full data build.
+          </p>
+          <div class="flex flex-wrap gap-2">
+            {(info.zips || []).map((z: string) => (
+              <a href={`/zip/${z}`} class="inline-flex items-center bg-primary/5 text-primary text-sm font-semibold px-3 py-1 rounded-full hover:bg-primary/10 transition-colors">
+                {z}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+
+    <div class="mt-8 text-center">
+      <a
+        href={`/state/${info.state.toLowerCase()}`}
+        class="inline-flex items-center gap-2 text-primary font-medium text-sm hover:underline"
+      >
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        View all ZIP codes in {stateFull}
+      </a>
+    </div>
+
+    <div class="mt-12 text-center">
+      <p class="text-xs text-slate-400">
+        Data sourced from <a href="https://www.census.gov/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">US Census Bureau</a> &middot; Free to use
+      </p>
+    </div>
+  </div>
+</Base>

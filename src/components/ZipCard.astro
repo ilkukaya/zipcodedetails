@@ -1,0 +1,39 @@
+---
+import { formatNumber, formatCurrency } from '../lib/formatters';
+
+interface Props {
+  zip: string;
+  city: string;
+  state: string;
+  population?: number | null;
+  income?: number | null;
+  county?: string;
+}
+
+const { zip, city, state, population, income, county } = Astro.props;
+---
+
+<a href={`/zip/${zip}`} class="block bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:shadow-md hover:border-primary/30 transition-all group no-underline">
+  <div class="flex items-center justify-between mb-2">
+    <span class="text-lg font-bold text-primary group-hover:text-primary-dark transition-colors">{zip}</span>
+    <svg class="w-4 h-4 text-slate-400 group-hover:text-primary transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  </div>
+  <p class="text-sm font-semibold text-slate-800">{city}, {state}</p>
+  {county && <p class="text-xs text-slate-500 mt-1">{county}</p>}
+  <div class="flex gap-4 mt-3 pt-3 border-t border-slate-100">
+    {population != null && (
+      <div>
+        <p class="text-xs text-slate-500">Population</p>
+        <p class="text-sm font-semibold text-slate-700 tabular-nums">{formatNumber(population)}</p>
+      </div>
+    )}
+    {income != null && income > 0 && (
+      <div>
+        <p class="text-xs text-slate-500">Median Income</p>
+        <p class="text-sm font-semibold text-slate-700 tabular-nums">{formatCurrency(income)}</p>
+      </div>
+    )}
+  </div>
+</a>

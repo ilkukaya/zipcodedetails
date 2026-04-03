@@ -1,0 +1,38 @@
+---
+interface Props {
+  slot: string;
+  format?: 'horizontal' | 'rectangle' | 'responsive';
+  className?: string;
+}
+
+const { slot, format = 'responsive', className = '' } = Astro.props;
+
+const minHeights: Record<string, string> = {
+  horizontal: 'min-h-[90px]',
+  rectangle: 'min-h-[250px]',
+  responsive: 'min-h-[90px]',
+};
+
+const adStyles: Record<string, string> = {
+  horizontal: 'display:block',
+  rectangle: 'display:inline-block;width:300px;height:250px',
+  responsive: 'display:block',
+};
+
+const isResponsive = format === 'responsive';
+---
+
+<div class={`ad-container ${minHeights[format]} flex items-center justify-center bg-slate-50 rounded-lg border border-slate-200 my-6 ${className}`}>
+  <ins
+    class="adsbygoogle"
+    style={adStyles[format]}
+    data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+    data-ad-slot={slot}
+    data-full-width-responsive={isResponsive ? 'true' : undefined}
+    data-ad-format={isResponsive ? 'auto' : ''}
+  ></ins>
+</div>
+
+<script>
+  (window.adsbygoogle = window.adsbygoogle || []).push({});
+</script>
