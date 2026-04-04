@@ -24,7 +24,7 @@ jobs:
           cache: 'pip'
 
       - name: Install Python dependencies
-        run: pip install requests pandas numpy
+        run: pip install -r requirements.txt
 
       - name: Download Census Gazetteer and ACS data
         run: python scripts/01_download_census.py
