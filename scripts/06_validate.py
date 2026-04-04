@@ -44,7 +44,7 @@ REQUIRED_FIELDS = [
 ]
 
 # Exits with code 1 if any of these are missing
-CRITICAL_FIELDS = {"zip", "city", "state", "lat", "lng"}
+CRITICAL_FIELDS = {"zip", "state", "lat", "lng"}
 
 STATE_INDEX_REQUIRED = {"name", "abbreviation", "zip_count", "population", "zips", "cities"}
 CITY_INDEX_REQUIRED = {"city", "state", "state_full", "county", "population", "zips"}

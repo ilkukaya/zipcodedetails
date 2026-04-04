@@ -248,6 +248,26 @@ ZIP_PREFIX_TO_STATE["979"] = "OR"
 _add_range(980, 995, "WA")
 _add_range(995, 1000, "AK")
 
+# Fill known gaps
+ZIP_PREFIX_TO_STATE.setdefault("001", "NY")   # Unique NY
+ZIP_PREFIX_TO_STATE.setdefault("002", "NY")
+ZIP_PREFIX_TO_STATE.setdefault("003", "NY")
+ZIP_PREFIX_TO_STATE.setdefault("004", "NY")
+_add_range(428, 430, "KY")   # Gap between KY and OH
+_add_range(568, 570, "MN")   # Gap between MN and SD
+_add_range(578, 580, "SD")   # Gap between SD and ND
+_add_range(694, 700, "NE")   # Gap between NE and LA
+_add_range(817, 820, "CO")   # Gap between CO and WY
+_add_range(848, 850, "UT")   # Gap between UT and AZ
+_add_range(865, 870, "AZ")   # Gap between AZ and NM
+_add_range(885, 889, "NM")   # Gap between NM and NV (except 885=TX already set)
+ZIP_PREFIX_TO_STATE.setdefault("962", "GU")   # Guam / AP military
+ZIP_PREFIX_TO_STATE.setdefault("963", "GU")
+ZIP_PREFIX_TO_STATE.setdefault("964", "GU")
+ZIP_PREFIX_TO_STATE.setdefault("965", "MP")   # Northern Mariana Islands
+ZIP_PREFIX_TO_STATE.setdefault("966", "MP")
+ZIP_PREFIX_TO_STATE.setdefault("969", "GU")
+
 # ---------------------------------------------------------------------------
 # CBSA prefix map (major metros)
 # ---------------------------------------------------------------------------
