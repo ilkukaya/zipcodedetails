@@ -7,10 +7,11 @@ export default defineConfig({
   output: 'static',
   build: {
     format: 'directory',
+    concurrency: 50,
   },
   vite: {
     build: {
-      chunkSizeWarningLimit: 1000,
+      chunkSizeWarningLimit: 2000,
     },
   },
 });

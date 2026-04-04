@@ -7,12 +7,12 @@ with sensible defaults, and writes the final dataset to:
 
   data/processed/all_zips.csv
 
-Columns in output
------------------
-zip, city, state, county_name, county_fips, timezone, cbsa_code, cbsa_name,
-latitude, longitude, land_area_sqmi, water_area_sqmi,
+Columns in output (matching what script 04 expects)
+----------------------------------------------------
+zip, city, state, state_full, county, cbsa, cbsa_code,
+lat, lng, land_area_sqmi, water_area_sqmi,
 population, median_household_income,
-surrounding_zips   ← pipe-separated list of 5 nearest ZIP codes
+timezone, dst, zip_type, surrounding_zips
 """
 
 import logging
@@ -34,27 +34,46 @@ ACS_CSV = RAW_DIR / "acs_data.csv"
 ZIP_MAPPING_CSV = RAW_DIR / "zip_mapping.csv"
 OUTPUT_CSV = PROCESSED_DIR / "all_zips.csv"
 
-# Number of nearest neighbours to compute
 N_SURROUNDING = 5
 
-# Columns we expect / want in the final output (in order)
 FINAL_COLUMNS = [
     "zip",
     "city",
     "state",
-    "county_name",
-    "county_fips",
-    "timezone",
+    "state_full",
+    "county",
+    "cbsa",
     "cbsa_code",
-    "cbsa_name",
-    "latitude",
-    "longitude",
-    "land_area_sqmi",
-    "water_area_sqmi",
     "population",
     "median_household_income",
+    "land_area_sqmi",
+    "water_area_sqmi",
+    "lat",
+    "lng",
+    "timezone",
+    "dst",
+    "zip_type",
     "surrounding_zips",
 ]
+
+# State full names (fallback if script 02 didn't populate)
+STATE_FULL_NAMES: dict[str, str] = {
+    "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas",
+    "CA": "California", "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware",
+    "DC": "District of Columbia", "FL": "Florida", "GA": "Georgia", "HI": "Hawaii",
+    "ID": "Idaho", "IL": "Illinois", "IN": "Indiana", "IA": "Iowa",
+    "KS": "Kansas", "KY": "Kentucky", "LA": "Louisiana", "ME": "Maine",
+    "MD": "Maryland", "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota",
+    "MS": "Mississippi", "MO": "Missouri", "MT": "Montana", "NE": "Nebraska",
+    "NV": "Nevada", "NH": "New Hampshire", "NJ": "New Jersey", "NM": "New Mexico",
+    "NY": "New York", "NC": "North Carolina", "ND": "North Dakota", "OH": "Ohio",
+    "OK": "Oklahoma", "OR": "Oregon", "PA": "Pennsylvania", "RI": "Rhode Island",
+    "SC": "South Carolina", "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas",
+    "UT": "Utah", "VT": "Vermont", "VA": "Virginia", "WA": "Washington",
+    "WV": "West Virginia", "WI": "Wisconsin", "WY": "Wyoming",
+    "AS": "American Samoa", "GU": "Guam", "MP": "Northern Mariana Islands",
+    "PR": "Puerto Rico", "VI": "U.S. Virgin Islands",
+}
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -67,28 +86,22 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-
 # ---------------------------------------------------------------------------
 # Haversine distance
 # ---------------------------------------------------------------------------
 
-_EARTH_RADIUS_MILES = 3958.8  # mean radius
+_EARTH_RADIUS_MILES = 3958.8
 
 
 def haversine_miles(
     lat1: float, lon1: float,
     lat2: np.ndarray, lon2: np.ndarray,
 ) -> np.ndarray:
-    """
-    Vectorised Haversine distance from a single point (lat1, lon1) to an
-    array of points (lat2, lon2).  Returns distances in miles.
-    """
     r = _EARTH_RADIUS_MILES
     phi1 = math.radians(lat1)
     phi2 = np.radians(lat2)
     dphi = phi2 - phi1
     dlambda = np.radians(lon2 - lon1)
-
     a = (
         np.sin(dphi / 2) ** 2
         + math.cos(phi1) * np.cos(phi2) * np.sin(dlambda / 2) ** 2
@@ -101,48 +114,35 @@ def haversine_miles(
 # ---------------------------------------------------------------------------
 
 def compute_surrounding_zips(df: pd.DataFrame, n: int = N_SURROUNDING) -> pd.Series:
-    """
-    For every row in *df* that has valid latitude/longitude, find the *n*
-    nearest other ZIPs by Haversine distance and return them as a
-    pipe-separated string.
-
-    Rows without coordinates get an empty string.
-    """
     log.info("Computing %d nearest neighbours for %d ZIPs …", n, len(df))
 
-    has_coords = df["latitude"].notna() & df["longitude"].notna()
-    coords_df = df.loc[has_coords, ["zip", "latitude", "longitude"]].reset_index(drop=True)
+    has_coords = df["lat"].notna() & df["lng"].notna()
+    coords_df = df.loc[has_coords, ["zip", "lat", "lng"]].reset_index(drop=True)
 
     zip_codes = coords_df["zip"].to_numpy()
-    lats = coords_df["latitude"].to_numpy(dtype=float)
-    lons = coords_df["longitude"].to_numpy(dtype=float)
+    lats = coords_df["lat"].to_numpy(dtype=float)
+    lons = coords_df["lng"].to_numpy(dtype=float)
 
     surrounding: dict[str, str] = {}
-
     total = len(coords_df)
+
     for i in range(total):
         if i % 5000 == 0:
             log.info("  Nearest-neighbour progress: %d / %d", i, total)
 
-        lat_i, lon_i = lats[i], lons[i]
-        # Compute distances from point i to all others
-        distances = haversine_miles(lat_i, lon_i, lats, lons)
-        # Exclude self (distance == 0)
+        distances = haversine_miles(lats[i], lons[i], lats, lons)
         distances[i] = math.inf
 
-        # Partial-sort: get indices of n smallest distances
         if total > n:
             nearest_indices = np.argpartition(distances, n)[:n]
-            # Sort the top-n by actual distance
             nearest_indices = nearest_indices[np.argsort(distances[nearest_indices])]
         else:
             nearest_indices = np.argsort(distances)[:n]
 
         surrounding[zip_codes[i]] = "|".join(zip_codes[nearest_indices])
 
-    # Map back to original index
     result = df["zip"].map(surrounding).fillna("")
-    log.info("Surrounding ZIPs computed.  Filled: %d / %d", result.ne("").sum(), len(df))
+    log.info("Surrounding ZIPs computed. Filled: %d / %d", result.ne("").sum(), len(df))
     return result
 
 
@@ -169,10 +169,6 @@ def merge_all(
     acs: pd.DataFrame,
     mapping: pd.DataFrame,
 ) -> pd.DataFrame:
-    """
-    Left-join on 'zip'.  Gazetteer is the canonical source of ZIPs;
-    ACS and mapping data are supplemental.
-    """
 
     def normalise_zip(df: pd.DataFrame) -> pd.DataFrame:
         if "zip" in df.columns:
@@ -197,12 +193,10 @@ def merge_all(
 
     log.info("Merging ← ACS data …")
     if not acs.empty:
-        # Keep only useful ACS columns
         acs_keep = ["zip"]
-        for col in ["population", "median_household_income", "zcta_name"]:
+        for col in ["population", "median_household_income"]:
             if col in acs.columns:
                 acs_keep.append(col)
-        # Don't overwrite existing columns
         acs_keep = [c for c in acs_keep if c == "zip" or c not in merged.columns]
         merged = merged.merge(acs[acs_keep], on="zip", how="left")
     else:
@@ -213,39 +207,102 @@ def merge_all(
 
 
 # ---------------------------------------------------------------------------
+# Column renaming and enrichment
+# ---------------------------------------------------------------------------
+
+def rename_and_enrich(df: pd.DataFrame) -> pd.DataFrame:
+    """Rename columns from raw names to the names script 04 expects."""
+
+    # Rename latitude/longitude → lat/lng
+    rename_map = {}
+    if "latitude" in df.columns and "lat" not in df.columns:
+        rename_map["latitude"] = "lat"
+    if "longitude" in df.columns and "lng" not in df.columns:
+        rename_map["longitude"] = "lng"
+    # county_name → county (if old script 02 was used)
+    if "county_name" in df.columns and "county" not in df.columns:
+        rename_map["county_name"] = "county"
+    # cbsa_name → cbsa
+    if "cbsa_name" in df.columns and "cbsa" not in df.columns:
+        rename_map["cbsa_name"] = "cbsa"
+
+    if rename_map:
+        log.info("Renaming columns: %s", rename_map)
+        df = df.rename(columns=rename_map)
+
+    # Ensure state_full exists
+    if "state_full" not in df.columns:
+        log.info("Adding state_full column from state abbreviation …")
+        df["state_full"] = df["state"].map(STATE_FULL_NAMES).fillna("")
+
+    # Ensure dst exists
+    if "dst" not in df.columns:
+        log.info("Adding dst column from timezone …")
+        NO_DST = {
+            "America/Phoenix", "Pacific/Honolulu", "America/St_Thomas",
+            "America/Puerto_Rico", "Pacific/Guam", "Pacific/Pago_Pago",
+        }
+        if "timezone" in df.columns:
+            df["dst"] = df["timezone"].apply(
+                lambda tz: str(tz) not in NO_DST if pd.notna(tz) and str(tz) else False
+            )
+        else:
+            df["dst"] = True
+
+    # Ensure zip_type exists
+    if "zip_type" not in df.columns:
+        log.info("Adding zip_type column (default STANDARD) …")
+        df["zip_type"] = "STANDARD"
+
+    # Ensure cbsa and cbsa_code exist
+    if "cbsa" not in df.columns:
+        df["cbsa"] = ""
+    if "cbsa_code" not in df.columns:
+        df["cbsa_code"] = ""
+
+    # Ensure county exists
+    if "county" not in df.columns:
+        df["county"] = ""
+
+    return df
+
+
+# ---------------------------------------------------------------------------
 # Fill missing values
 # ---------------------------------------------------------------------------
 
 def fill_defaults(df: pd.DataFrame) -> pd.DataFrame:
-    """Apply sensible defaults for missing values."""
-
-    # Numeric columns: convert first, then fill with 0 / -1
-    for col in ["latitude", "longitude", "land_area_sqmi", "water_area_sqmi"]:
+    for col in ["lat", "lng", "land_area_sqmi", "water_area_sqmi"]:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
     for col in ["population", "median_household_income"]:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
-            # -1 indicates data not available (distinguishable from 0)
             df[col] = df[col].fillna(-1).astype(int)
 
     for col in ["land_area_sqmi", "water_area_sqmi"]:
         if col in df.columns:
             df[col] = df[col].fillna(0.0)
 
-    # String columns: empty string
-    str_defaults = ["city", "state", "county_name", "county_fips",
-                    "timezone", "cbsa_code", "cbsa_name", "surrounding_zips"]
+    str_defaults = ["city", "state", "state_full", "county",
+                    "timezone", "cbsa", "cbsa_code", "zip_type",
+                    "surrounding_zips"]
     for col in str_defaults:
         if col in df.columns:
             df[col] = df[col].fillna("").astype(str).str.strip()
+
+    # Ensure dst is boolean
+    if "dst" in df.columns:
+        df["dst"] = df["dst"].apply(
+            lambda v: bool(v) if isinstance(v, bool) else str(v).lower() in ("true", "1", "yes")
+        )
 
     return df
 
 
 # ---------------------------------------------------------------------------
-# Logging statistics
+# Statistics
 # ---------------------------------------------------------------------------
 
 def log_statistics(df: pd.DataFrame, label: str = "Final dataset") -> None:
@@ -259,6 +316,8 @@ def log_statistics(df: pd.DataFrame, label: str = "Final dataset") -> None:
         if pd.api.types.is_numeric_dtype(series):
             missing = (series.isna() | series.eq(-1)).sum()
             log.info("  %-28s : %d missing / -1", col, missing)
+        elif pd.api.types.is_bool_dtype(series):
+            log.info("  %-28s : %d True, %d False", col, series.sum(), (~series).sum())
         else:
             missing = series.eq("").sum() + series.isna().sum()
             log.info("  %-28s : %d blank/null", col, missing)
@@ -274,39 +333,39 @@ def main() -> None:
     log.info("Output directory: %s", PROCESSED_DIR)
 
     # --- Load ---
-    log.info("=== Step 1/4: Load raw data files ===")
+    log.info("=== Step 1/5: Load raw data files ===")
     gaz = load_csv(GAZETTEER_CSV, "Gazetteer")
     acs = load_csv(ACS_CSV, "ACS data")
     mapping = load_csv(ZIP_MAPPING_CSV, "ZIP mapping")
 
     if gaz.empty:
-        raise RuntimeError(
-            "Gazetteer data is missing.  Run 01_download_census.py first."
-        )
+        raise RuntimeError("Gazetteer data is missing. Run 01_download_census.py first.")
 
     # --- Merge ---
-    log.info("=== Step 2/4: Merge datasets ===")
+    log.info("=== Step 2/5: Merge datasets ===")
     merged = merge_all(gaz, acs, mapping)
 
+    # --- Rename and enrich ---
+    log.info("=== Step 3/5: Rename columns and enrich ===")
+    merged = rename_and_enrich(merged)
+
     # --- Surrounding ZIPs ---
-    log.info("=== Step 3/4: Compute surrounding ZIPs ===")
-    # Convert lat/lon to float before passing
-    for col in ["latitude", "longitude"]:
+    log.info("=== Step 4/5: Compute surrounding ZIPs ===")
+    for col in ["lat", "lng"]:
         if col in merged.columns:
             merged[col] = pd.to_numeric(merged[col], errors="coerce")
 
     merged["surrounding_zips"] = compute_surrounding_zips(merged, n=N_SURROUNDING)
 
     # --- Fill defaults ---
-    log.info("=== Step 4/4: Fill defaults and write output ===")
+    log.info("=== Step 5/5: Fill defaults and write output ===")
     merged = fill_defaults(merged)
 
-    # Reorder to final column list (keep any extra columns at the end)
+    # Reorder to final column list
     ordered = [c for c in FINAL_COLUMNS if c in merged.columns]
     extras = [c for c in merged.columns if c not in ordered]
     merged = merged[ordered + extras]
 
-    # Log stats before writing
     log_statistics(merged)
 
     merged.to_csv(OUTPUT_CSV, index=False)

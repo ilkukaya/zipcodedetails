@@ -27,7 +27,7 @@ from urllib3.util.retry import Retry
 # Configuration
 # ---------------------------------------------------------------------------
 
-CENSUS_API_KEY = "bce2f6b976e5e03781def23918ecc67b34498ee7"
+CENSUS_API_KEY = os.environ.get("CENSUS_API_KEY", "bce2f6b976e5e03781def23918ecc67b34498ee7")
 
 GAZETTEER_URL = (
     "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/"

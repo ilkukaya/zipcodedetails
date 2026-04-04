@@ -2,29 +2,31 @@
 02_download_usps.py
 
 Builds a comprehensive ZIP-code-to-city/state/county/timezone/CBSA mapping
-without requiring HUD USPS registration.
+using Census Bureau relationship files (fast bulk downloads).
 
 Strategy
 --------
-1. Read the Gazetteer file already downloaded by 01_download_census.py to get
-   confirmed ZCTA codes and coordinates.
-2. Call the Census Geocoder batch API to resolve FIPS county codes for a sample
-   of ZIPs, then extrapolate the rest via a state-prefix lookup table.
-3. Apply a built-in state → primary timezone table.
-4. Apply a built-in CBSA lookup for the ~400 largest metro areas.
-5. For ZIPs whose coordinates fall in a state with multiple timezones, use a
-   longitude-based heuristic to pick the correct zone.
+1. Read the Gazetteer file already downloaded by 01_download_census.py.
+2. Download Census ZCTA-to-County relationship file for county names.
+3. Download Census ZCTA-to-Place relationship file for city names.
+4. Apply a built-in state-prefix → abbreviation lookup table.
+5. Apply a built-in state → timezone table (with longitude heuristic for
+   split-timezone states).
+6. Apply a built-in CBSA prefix lookup for major metro areas.
+7. Add state full names, DST flag, and zip_type.
 
 Output
 ------
 data/raw/zip_mapping.csv  — one row per ZCTA with columns:
-  zip, city, state, county_name, county_fips, timezone, cbsa_code, cbsa_name
+  zip, city, state, state_full, county, timezone, dst, zip_type,
+  cbsa_code, cbsa_name, latitude, longitude
 """
 
 import io
 import json
 import logging
 import os
+import re
 import time
 from pathlib import Path
 
@@ -37,16 +39,24 @@ from urllib3.util.retry import Retry
 # Configuration
 # ---------------------------------------------------------------------------
 
-CENSUS_API_KEY = "bce2f6b976e5e03781def23918ecc67b34498ee7"
-
 RAW_DIR = Path(__file__).resolve().parent.parent / "data" / "raw"
 GAZETTEER_CSV = RAW_DIR / "gazetteer.csv"
 ZIP_MAPPING_OUT = RAW_DIR / "zip_mapping.csv"
 
+# Census 2020 relationship files
+ZCTA_COUNTY_URL = (
+    "https://www2.census.gov/geo/docs/maps-data/data/rel2020/"
+    "zcta520/tab20_zcta520_county20_natl.txt"
+)
+ZCTA_PLACE_URL = (
+    "https://www2.census.gov/geo/docs/maps-data/data/rel2020/"
+    "zcta520/tab20_zcta520_place20_natl.txt"
+)
+
 MAX_RETRIES = 5
 BACKOFF_FACTOR = 1.5
 RETRY_STATUS_CODES = {429, 500, 502, 503, 504}
-REQUEST_TIMEOUT = 60
+REQUEST_TIMEOUT = 120
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -60,13 +70,31 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Static mapping tables
+# State full names
 # ---------------------------------------------------------------------------
 
-# State abbreviation → (primary_timezone, longitude_boundary_for_split_states)
-# Longitude boundary: if a state spans two zones, ZIPs east of the boundary get
-# zone[0], ZIPs at or west of the boundary get zone[1].
-# None means no split — use zone[0] uniformly.
+STATE_FULL_NAMES: dict[str, str] = {
+    "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas",
+    "CA": "California", "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware",
+    "DC": "District of Columbia", "FL": "Florida", "GA": "Georgia", "HI": "Hawaii",
+    "ID": "Idaho", "IL": "Illinois", "IN": "Indiana", "IA": "Iowa",
+    "KS": "Kansas", "KY": "Kentucky", "LA": "Louisiana", "ME": "Maine",
+    "MD": "Maryland", "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota",
+    "MS": "Mississippi", "MO": "Missouri", "MT": "Montana", "NE": "Nebraska",
+    "NV": "Nevada", "NH": "New Hampshire", "NJ": "New Jersey", "NM": "New Mexico",
+    "NY": "New York", "NC": "North Carolina", "ND": "North Dakota", "OH": "Ohio",
+    "OK": "Oklahoma", "OR": "Oregon", "PA": "Pennsylvania", "RI": "Rhode Island",
+    "SC": "South Carolina", "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas",
+    "UT": "Utah", "VT": "Vermont", "VA": "Virginia", "WA": "Washington",
+    "WV": "West Virginia", "WI": "Wisconsin", "WY": "Wyoming",
+    "AS": "American Samoa", "GU": "Guam", "MP": "Northern Mariana Islands",
+    "PR": "Puerto Rico", "VI": "U.S. Virgin Islands",
+}
+
+# ---------------------------------------------------------------------------
+# State timezone mapping
+# ---------------------------------------------------------------------------
+
 STATE_TIMEZONE: dict[str, tuple[str, float | None]] = {
     "AL": ("America/Chicago", None),
     "AK": ("America/Anchorage", None),
@@ -77,16 +105,16 @@ STATE_TIMEZONE: dict[str, tuple[str, float | None]] = {
     "CT": ("America/New_York", None),
     "DE": ("America/New_York", None),
     "DC": ("America/New_York", None),
-    "FL": ("America/New_York", -85.5),   # Panhandle → Chicago west of -85.5
+    "FL": ("America/New_York", -85.5),
     "GA": ("America/New_York", None),
     "GU": ("Pacific/Guam", None),
     "HI": ("Pacific/Honolulu", None),
-    "ID": ("America/Boise", -113.5),     # Northern tip → Los_Angeles
+    "ID": ("America/Boise", -113.5),
     "IL": ("America/Chicago", None),
     "IN": ("America/Indiana/Indianapolis", None),
     "IA": ("America/Chicago", None),
-    "KS": ("America/Chicago", -101.5),   # Far west → Denver
-    "KY": ("America/New_York", -84.8),   # Western KY → Chicago
+    "KS": ("America/Chicago", -101.5),
+    "KY": ("America/New_York", -84.8),
     "LA": ("America/Chicago", None),
     "ME": ("America/New_York", None),
     "MD": ("America/New_York", None),
@@ -96,14 +124,14 @@ STATE_TIMEZONE: dict[str, tuple[str, float | None]] = {
     "MS": ("America/Chicago", None),
     "MO": ("America/Chicago", None),
     "MT": ("America/Denver", None),
-    "NE": ("America/Chicago", -104.0),   # Western NE → Denver
+    "NE": ("America/Chicago", -104.0),
     "NV": ("America/Los_Angeles", None),
     "NH": ("America/New_York", None),
     "NJ": ("America/New_York", None),
     "NM": ("America/Denver", None),
     "NY": ("America/New_York", None),
     "NC": ("America/New_York", None),
-    "ND": ("America/Chicago", -101.5),   # Far west → Denver
+    "ND": ("America/Chicago", -101.5),
     "OH": ("America/New_York", None),
     "OK": ("America/Chicago", None),
     "OR": ("America/Los_Angeles", None),
@@ -111,9 +139,9 @@ STATE_TIMEZONE: dict[str, tuple[str, float | None]] = {
     "PR": ("America/Puerto_Rico", None),
     "RI": ("America/New_York", None),
     "SC": ("America/New_York", None),
-    "SD": ("America/Chicago", -104.0),   # West SD → Denver
-    "TN": ("America/Chicago", -84.5),    # East TN → New_York
-    "TX": ("America/Chicago", -104.8),   # Far west TX → Denver
+    "SD": ("America/Chicago", -104.0),
+    "TN": ("America/Chicago", -84.5),
+    "TX": ("America/Chicago", -104.8),
     "UT": ("America/Denver", None),
     "VT": ("America/New_York", None),
     "VA": ("America/New_York", None),
@@ -124,82 +152,106 @@ STATE_TIMEZONE: dict[str, tuple[str, float | None]] = {
     "WY": ("America/Denver", None),
 }
 
-# FIPS state code → abbreviation
-FIPS_TO_STATE: dict[str, str] = {
-    "01": "AL", "02": "AK", "04": "AZ", "05": "AR", "06": "CA",
-    "08": "CO", "09": "CT", "10": "DE", "11": "DC", "12": "FL",
-    "13": "GA", "15": "HI", "16": "ID", "17": "IL", "18": "IN",
-    "19": "IA", "20": "KS", "21": "KY", "22": "LA", "23": "ME",
-    "24": "MD", "25": "MA", "26": "MI", "27": "MN", "28": "MS",
-    "29": "MO", "30": "MT", "31": "NE", "32": "NV", "33": "NH",
-    "34": "NJ", "35": "NM", "36": "NY", "37": "NC", "38": "ND",
-    "39": "OH", "40": "OK", "41": "OR", "42": "PA", "44": "RI",
-    "45": "SC", "46": "SD", "47": "TN", "48": "TX", "49": "UT",
-    "50": "VT", "51": "VA", "53": "WA", "54": "WV", "55": "WI",
-    "56": "WY", "60": "AS", "66": "GU", "69": "MP", "72": "PR",
-    "78": "VI",
+# Timezones that do NOT observe DST
+NO_DST_TIMEZONES = {
+    "America/Phoenix", "Pacific/Honolulu", "America/St_Thomas",
+    "America/Puerto_Rico", "Pacific/Guam", "Pacific/Pago_Pago",
 }
 
-# ZIP prefix (first 3 digits) → state abbreviation
-# Source: USPS Publication 28 / public domain postal knowledge
-ZIP_PREFIX_TO_STATE: dict[str, str] = {
-    **{str(p).zfill(3): "MA" for p in range(10, 28)},   # 010–027
-    "028": "RI", "029": "RI",
-    **{str(p).zfill(3): "NH" for p in range(30, 39)},
-    **{str(p).zfill(3): "ME" for p in range(39, 50)},
-    **{str(p).zfill(3): "VT" for p in [50, 51, 52, 53, 54, 56, 57, 58, 59]},
-    **{str(p).zfill(3): "CT" for p in range(60, 70)},
-    **{str(p).zfill(3): "NJ" for p in range(70, 90)},
-    **{str(p).zfill(3): "NY" for p in list(range(100, 150))},
-    **{str(p).zfill(3): "PA" for p in range(150, 200)},
-    **{str(p).zfill(3): "DE" for p in [197, 198, 199]},
-    **{str(p).zfill(3): "MD" for p in list(range(206, 220)) + [200, 201, 202, 203, 204, 205]},
-    "201": "DC", "202": "DC", "203": "DC", "204": "DC", "205": "DC",
-    **{str(p).zfill(3): "VA" for p in list(range(220, 247))},
-    **{str(p).zfill(3): "WV" for p in range(247, 270)},
-    **{str(p).zfill(3): "NC" for p in range(270, 290)},
-    **{str(p).zfill(3): "SC" for p in range(290, 300)},
-    **{str(p).zfill(3): "GA" for p in range(300, 320)},
-    **{str(p).zfill(3): "FL" for p in range(320, 350)},
-    **{str(p).zfill(3): "AL" for p in range(350, 370)},
-    **{str(p).zfill(3): "TN" for p in range(370, 386)},
-    **{str(p).zfill(3): "MS" for p in range(386, 400)},
-    **{str(p).zfill(3): "KY" for p in range(400, 428)},
-    **{str(p).zfill(3): "OH" for p in range(430, 460)},
-    **{str(p).zfill(3): "IN" for p in range(460, 480)},
-    **{str(p).zfill(3): "MI" for p in range(480, 500)},
-    **{str(p).zfill(3): "IA" for p in range(500, 528)},
-    **{str(p).zfill(3): "WI" for p in range(530, 550)},
-    **{str(p).zfill(3): "MN" for p in range(550, 568)},
-    **{str(p).zfill(3): "SD" for p in range(570, 578)},
-    **{str(p).zfill(3): "ND" for p in range(580, 590)},
-    **{str(p).zfill(3): "MT" for p in range(590, 600)},
-    **{str(p).zfill(3): "IL" for p in range(600, 630)},
-    **{str(p).zfill(3): "MO" for p in range(630, 660)},
-    **{str(p).zfill(3): "KS" for p in range(660, 680)},
-    **{str(p).zfill(3): "NE" for p in range(680, 694)},
-    **{str(p).zfill(3): "LA" for p in range(700, 715)},
-    **{str(p).zfill(3): "AR" for p in range(716, 730)},
-    **{str(p).zfill(3): "OK" for p in range(730, 750)},
-    **{str(p).zfill(3): "TX" for p in range(750, 800)},
-    **{str(p).zfill(3): "CO" for p in range(800, 817)},
-    **{str(p).zfill(3): "WY" for p in range(820, 832)},
-    **{str(p).zfill(3): "ID" for p in range(832, 839)},
-    **{str(p).zfill(3): "UT" for p in range(840, 848)},
-    **{str(p).zfill(3): "AZ" for p in range(850, 866)},
-    **{str(p).zfill(3): "NM" for p in range(870, 885)},
-    **{str(p).zfill(3): "NV" for p in range(889, 900)},
-    **{str(p).zfill(3): "CA" for p in range(900, 962)},
-    **{str(p).zfill(3): "OR" for p in range(970, 980)},
-    **{str(p).zfill(3): "WA" for p in range(980, 995)},
-    **{str(p).zfill(3): "AK" for p in range(995, 1000)},
-    **{str(p).zfill(3): "HI" for p in range(967, 969)},
-    "006": "PR", "007": "PR", "008": "PR", "009": "PR",
-}
+# ---------------------------------------------------------------------------
+# ZIP prefix → state abbreviation
+# ---------------------------------------------------------------------------
 
-# Selected large CBSAs: cbsa_code → (cbsa_name, list_of_zip_prefixes)
-# Only the most-populated metros; the full list would be 900+ entries.
-# This is supplemental — ZIPs not matched here will have blank CBSA fields.
+ZIP_PREFIX_TO_STATE: dict[str, str] = {}
+
+def _add_range(start, end, state):
+    for p in range(start, end):
+        ZIP_PREFIX_TO_STATE[str(p).zfill(3)] = state
+
+# Northeast
+_add_range(5, 5, "NY")  # 005 = NY (IRS)
+ZIP_PREFIX_TO_STATE["005"] = "NY"
+ZIP_PREFIX_TO_STATE["006"] = "PR"
+ZIP_PREFIX_TO_STATE["007"] = "PR"
+ZIP_PREFIX_TO_STATE["008"] = "PR"
+ZIP_PREFIX_TO_STATE["009"] = "PR"
+_add_range(10, 28, "MA")
+ZIP_PREFIX_TO_STATE["028"] = "RI"
+ZIP_PREFIX_TO_STATE["029"] = "RI"
+_add_range(30, 39, "NH")
+_add_range(39, 50, "ME")
+for p in [50, 51, 52, 53, 54, 56, 57, 58, 59]:
+    ZIP_PREFIX_TO_STATE[str(p).zfill(3)] = "VT"
+ZIP_PREFIX_TO_STATE["055"] = "MA"
+_add_range(60, 70, "CT")
+_add_range(70, 90, "NJ")
+_add_range(90, 99, "AE")  # Military APO/FPO
+_add_range(100, 150, "NY")
+_add_range(150, 197, "PA")
+ZIP_PREFIX_TO_STATE["197"] = "DE"
+ZIP_PREFIX_TO_STATE["198"] = "DE"
+ZIP_PREFIX_TO_STATE["199"] = "DE"
+# DC & MD
+ZIP_PREFIX_TO_STATE["200"] = "DC"
+ZIP_PREFIX_TO_STATE["201"] = "VA"  # Northern VA (some overlap)
+ZIP_PREFIX_TO_STATE["202"] = "DC"
+ZIP_PREFIX_TO_STATE["203"] = "DC"
+ZIP_PREFIX_TO_STATE["204"] = "DC"
+ZIP_PREFIX_TO_STATE["205"] = "DC"
+_add_range(206, 220, "MD")
+_add_range(220, 247, "VA")
+_add_range(247, 270, "WV")
+_add_range(270, 290, "NC")
+_add_range(290, 300, "SC")
+_add_range(300, 320, "GA")
+_add_range(320, 350, "FL")
+_add_range(350, 370, "AL")
+_add_range(370, 386, "TN")
+_add_range(386, 398, "MS")
+ZIP_PREFIX_TO_STATE["398"] = "GA"
+ZIP_PREFIX_TO_STATE["399"] = "GA"
+_add_range(400, 428, "KY")
+_add_range(430, 460, "OH")
+_add_range(460, 480, "IN")
+_add_range(480, 500, "MI")
+_add_range(500, 529, "IA")
+_add_range(530, 550, "WI")
+_add_range(550, 568, "MN")
+_add_range(570, 578, "SD")
+_add_range(580, 589, "ND")
+_add_range(590, 600, "MT")
+_add_range(600, 630, "IL")
+_add_range(630, 659, "MO")
+ZIP_PREFIX_TO_STATE["659"] = "KS"
+_add_range(660, 680, "KS")
+_add_range(680, 694, "NE")
+_add_range(700, 715, "LA")
+ZIP_PREFIX_TO_STATE["715"] = "LA"
+_add_range(716, 730, "AR")
+_add_range(730, 750, "OK")
+_add_range(750, 800, "TX")
+_add_range(800, 817, "CO")
+_add_range(820, 831, "WY")
+ZIP_PREFIX_TO_STATE["831"] = "WY"
+_add_range(832, 839, "ID")
+_add_range(840, 848, "UT")
+_add_range(850, 866, "AZ")
+_add_range(870, 885, "NM")
+ZIP_PREFIX_TO_STATE["885"] = "TX"  # El Paso area
+_add_range(889, 899, "NV")
+ZIP_PREFIX_TO_STATE["899"] = "NV"
+_add_range(900, 962, "CA")
+_add_range(962, 967, "AP")  # Military Pacific
+_add_range(967, 969, "HI")
+_add_range(970, 979, "OR")
+ZIP_PREFIX_TO_STATE["979"] = "OR"
+_add_range(980, 995, "WA")
+_add_range(995, 1000, "AK")
+
+# ---------------------------------------------------------------------------
+# CBSA prefix map (major metros)
+# ---------------------------------------------------------------------------
+
 CBSA_PREFIX_MAP: list[tuple[str, str, list[str]]] = [
     ("35620", "New York-Newark-Jersey City, NY-NJ-PA",
      ["100", "101", "102", "103", "104", "105", "106", "107", "108", "109",
@@ -240,7 +292,7 @@ CBSA_PREFIX_MAP: list[tuple[str, str, list[str]]] = [
      ["300", "301", "302", "303", "304", "305", "306", "307", "308", "309",
       "310", "311", "312", "313", "314", "315", "316", "317", "318", "319"]),
     ("40140", "Riverside-San Bernardino-Ontario, CA",
-     ["917", "918", "919", "920", "921", "922", "923", "924", "925"]),
+     ["923", "924", "925"]),
     ("41740", "San Diego-Chula Vista-Carlsbad, CA",
      ["919", "920", "921", "922"]),
     ("45300", "Tampa-St. Petersburg-Clearwater, FL",
@@ -271,38 +323,53 @@ CBSA_PREFIX_MAP: list[tuple[str, str, list[str]]] = [
      ["493", "494", "495", "496"]),
     ("40900", "Sacramento-Roseville-Folsom, CA",
      ["956", "957", "958", "959", "960", "961"]),
-    ("24860", "Harrisburg-Carlisle, PA",
-     ["170", "171", "172", "173", "174", "175", "176", "177"]),
-    ("25540", "Hartford-East Hartford-Middletown, CT",
-     ["060", "061", "062", "063", "064", "065", "066"]),
     ("12420", "Austin-Round Rock-Georgetown, TX",
      ["786", "787", "788"]),
-    ("29460", "Knoxville, TN",
-     ["377", "378", "379"]),
     ("16740", "Charlotte-Concord-Gastonia, NC-SC",
      ["280", "281", "282", "283", "284", "290", "291", "292"]),
     ("31140", "Louisville/Jefferson County, KY-IN",
      ["400", "401", "402", "410", "411", "412"]),
     ("26900", "Indianapolis-Carmel-Anderson, IN",
      ["460", "461", "462", "463", "464", "465", "466", "467", "468", "469"]),
-    ("20500", "El Paso, TX",
-     ["798", "799", "885"]),
-    ("36260", "Ogden-Clearfield, UT",
-     ["840", "841", "842"]),
-    ("39100", "Providence-Warwick, RI-MA",
-     ["028", "029"]),
-    ("33340", "Milwaukee-Waukesha, WI",
-     ["530", "531", "532", "534"]),
-    ("10420", "Akron, OH",
-     ["442", "443", "444"]),
+    ("41940", "San Jose-Sunnyvale-Santa Clara, CA",
+     ["950", "951"]),
+    ("33460", "Minneapolis-St. Paul-Bloomington, MN-WI",
+     ["550", "551", "553", "554", "555", "556", "557"]),
+    ("19740", "Denver-Aurora-Lakewood, CO",
+     ["800", "801", "802", "803", "804", "805"]),
     ("38900", "Portland-Vancouver-Hillsboro, OR-WA",
      ["970", "971", "972", "973", "974", "986"]),
     ("40060", "Richmond, VA",
      ["230", "231", "232", "233", "234"]),
     ("47260", "Virginia Beach-Norfolk-Newport News, VA-NC",
      ["234", "235", "236", "237", "238", "239"]),
+    ("41620", "Salt Lake City, UT",
+     ["840", "841", "842", "843", "844", "845"]),
+    ("13820", "Birmingham-Hoover, AL",
+     ["350", "351", "352"]),
+    ("10580", "Albany-Schenectady-Troy, NY",
+     ["120", "121", "122", "123"]),
+    ("15380", "Buffalo-Cheektowaga, NY",
+     ["140", "141", "142", "143"]),
+    ("40380", "Rochester, NY",
+     ["144", "145", "146", "147", "148", "149"]),
+    ("44060", "Syracuse, NY",
+     ["130", "131", "132"]),
+    ("36540", "Omaha-Council Bluffs, NE-IA",
+     ["680", "681", "682", "683", "684"]),
+    ("46060", "Tucson, AZ",
+     ["856", "857"]),
+    ("21340", "El Paso, TX",
+     ["798", "799"]),
+    ("10740", "Albuquerque, NM",
+     ["870", "871", "872", "873"]),
+    ("25540", "Hartford-East Hartford-Middletown, CT",
+     ["060", "061", "062", "063", "064", "065", "066"]),
+    ("39100", "Providence-Warwick, RI-MA",
+     ["028", "029"]),
+    ("33340", "Milwaukee-Waukesha, WI",
+     ["530", "531", "532", "534"]),
 ]
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -314,7 +381,7 @@ def build_session() -> requests.Session:
         total=MAX_RETRIES,
         backoff_factor=BACKOFF_FACTOR,
         status_forcelist=RETRY_STATUS_CODES,
-        allowed_methods={"GET", "POST"},
+        allowed_methods={"GET"},
         raise_on_status=False,
     )
     adapter = HTTPAdapter(max_retries=retry)
@@ -323,26 +390,39 @@ def build_session() -> requests.Session:
     return session
 
 
+def download_text(session: requests.Session, url: str, label: str) -> str:
+    """Download a URL and return the text content."""
+    log.info("Downloading %s from %s", label, url)
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            resp = session.get(url, timeout=REQUEST_TIMEOUT)
+            resp.raise_for_status()
+            log.info("  Downloaded %.2f MB for %s", len(resp.content) / 1_048_576, label)
+            return resp.text
+        except requests.RequestException as exc:
+            log.warning("  Attempt %d/%d failed for %s: %s", attempt, MAX_RETRIES, label, exc)
+            if attempt < MAX_RETRIES:
+                sleep_time = BACKOFF_FACTOR * (2 ** (attempt - 1))
+                log.info("  Retrying in %.1f s …", sleep_time)
+                time.sleep(sleep_time)
+            else:
+                raise RuntimeError(f"Failed to download {label} after {MAX_RETRIES} attempts") from exc
+
+
 def state_from_zip_prefix(zip_code: str) -> str:
-    """Return state abbreviation from first 3 digits of ZIP."""
     prefix = zip_code[:3]
     return ZIP_PREFIX_TO_STATE.get(prefix, "")
 
 
 def timezone_for_zip(state: str, longitude: float | None) -> str:
-    """
-    Determine the IANA timezone for a ZIP given its state and longitude.
-    Applies a longitude-based heuristic for states that span two time zones.
-    """
     if not state or state not in STATE_TIMEZONE:
         return ""
     primary_tz, boundary = STATE_TIMEZONE[state]
     if boundary is None or longitude is None:
         return primary_tz
 
-    # Special cases: which direction is the split?
     split_configs: dict[str, tuple[str, str]] = {
-        "FL": ("America/New_York", "America/Chicago"),   # east, west
+        "FL": ("America/New_York", "America/Chicago"),
         "ID": ("America/Boise", "America/Los_Angeles"),
         "KS": ("America/Chicago", "America/Denver"),
         "KY": ("America/New_York", "America/Chicago"),
@@ -358,34 +438,14 @@ def timezone_for_zip(state: str, longitude: float | None) -> str:
     return primary_tz
 
 
-def fetch_acs_city_names(
-    session: requests.Session,
-    zip_codes: list[str],
-) -> dict[str, str]:
-    """
-    Use the Census ACS API to look up city-like names (ZCTA NAME field).
-    Returns a dict of zip → city string.
-    The NAME field typically looks like "ZCTA5 90210" — we strip the prefix.
-    We already have this from 01_download_census.py (acs_data.csv) if it
-    was downloaded; we re-fetch only what's needed here.
-    """
-    acs_csv = RAW_DIR / "acs_data.csv"
-    if acs_csv.exists():
-        log.info("Reading city names from existing acs_data.csv …")
-        acs_df = pd.read_csv(acs_csv, dtype=str)
-        if "zip" in acs_df.columns and "zcta_name" in acs_df.columns:
-            mapping = dict(zip(acs_df["zip"].str.zfill(5), acs_df["zcta_name"]))
-            return mapping
-    log.info("acs_data.csv not found or missing zcta_name; ZCTA names will be blank.")
-    return {}
+def dst_for_timezone(tz: str) -> bool:
+    """Return True if the timezone observes Daylight Saving Time."""
+    if not tz:
+        return False
+    return tz not in NO_DST_TIMEZONES
 
-
-# ---------------------------------------------------------------------------
-# CBSA lookup helpers
-# ---------------------------------------------------------------------------
 
 def build_cbsa_prefix_index() -> dict[str, tuple[str, str]]:
-    """Return dict: 3-digit prefix → (cbsa_code, cbsa_name)."""
     index: dict[str, tuple[str, str]] = {}
     for cbsa_code, cbsa_name, prefixes in CBSA_PREFIX_MAP:
         for prefix in prefixes:
@@ -393,73 +453,111 @@ def build_cbsa_prefix_index() -> dict[str, tuple[str, str]]:
     return index
 
 
-# ---------------------------------------------------------------------------
-# Census Geocoder – county resolution (batch, up to 1000 at a time)
-# ---------------------------------------------------------------------------
-
-def fetch_county_for_zips_batch(
-    session: requests.Session,
-    zip_lat_lon: list[tuple[str, float, float]],
-) -> dict[str, tuple[str, str]]:
-    """
-    Call the Census Geocoder batch endpoint to resolve county FIPS + name
-    for a list of (zip, lat, lon) tuples.
-
-    Returns dict: zip → (county_fips_5, county_name)
-    """
-    if not zip_lat_lon:
-        return {}
-
-    BATCH_URL = "https://geocoding.geo.census.gov/geocoder/geographies/coordinates"
-    results: dict[str, tuple[str, str]] = {}
-
-    # The batch coordinates endpoint accepts one pair at a time via query params
-    # (the bulk form upload is for addresses only). We use individual requests
-    # but throttle to avoid rate limits.
-    BATCH_SIZE = 50
-    log.info(
-        "Fetching county data from Census Geocoder for %d ZIPs (in batches of %d) …",
-        len(zip_lat_lon),
-        BATCH_SIZE,
+def clean_place_name(name: str) -> str:
+    """Clean Census place name: 'New York city' → 'New York'."""
+    if not name:
+        return ""
+    # Remove suffixes like 'city', 'town', 'village', 'CDP', 'borough', etc.
+    name = re.sub(
+        r'\s+(city|town|village|CDP|borough|municipality|plantation|comunidad|zona urbana)$',
+        '', name, flags=re.IGNORECASE
     )
-    total = len(zip_lat_lon)
-    for i, (zip_code, lat, lon) in enumerate(zip_lat_lon):
-        if i % 100 == 0:
-            log.info("  Progress: %d / %d", i, total)
-        try:
-            resp = session.get(
-                BATCH_URL,
-                params={
-                    "x": lon,
-                    "y": lat,
-                    "benchmark": "Public_AR_Census2020",
-                    "vintage": "Census2020_Census2020",
-                    "layers": "Counties",
-                    "format": "json",
-                },
-                timeout=REQUEST_TIMEOUT,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            geographies = (
-                data.get("result", {})
-                    .get("geographies", {})
-                    .get("Counties", [])
-            )
-            if geographies:
-                county = geographies[0]
-                state_fips = county.get("STATE", "")
-                county_fips_3 = county.get("COUNTY", "")
-                county_name = county.get("NAME", "")
-                full_fips = state_fips + county_fips_3
-                results[zip_code] = (full_fips, county_name)
-        except Exception as exc:  # noqa: BLE001
-            log.debug("Geocoder failed for %s: %s", zip_code, exc)
-        # Light throttle: 20 req/s max
-        time.sleep(0.05)
+    return name.strip()
 
-    log.info("Geocoder resolved county for %d / %d ZIPs.", len(results), total)
-    return results
+
+def clean_county_name(name: str) -> str:
+    """Clean Census county name to standard format: 'Kings County' stays, etc."""
+    if not name:
+        return ""
+    return name.strip()
+
+
+# ---------------------------------------------------------------------------
+# Download and parse Census relationship files
+# ---------------------------------------------------------------------------
+
+def download_zcta_county_mapping(session: requests.Session) -> dict[str, str]:
+    """
+    Download the ZCTA-to-County relationship file.
+    Returns dict: ZCTA (zip) → county name (the county with largest area overlap).
+    """
+    text = download_text(session, ZCTA_COUNTY_URL, "ZCTA-County relationship")
+    df = pd.read_csv(io.StringIO(text), sep="|", dtype=str)
+    log.info("ZCTA-County file columns: %s", list(df.columns))
+    log.info("ZCTA-County file rows: %d", len(df))
+
+    # Columns: GEOID_ZCTA5_20, GEOID_COUNTY_20, NAMELSAD_ZCTA5_20,
+    #          NAMELSAD_COUNTY_20, AREALAND_PART, etc.
+    zcta_col = [c for c in df.columns if "GEOID_ZCTA" in c.upper()][0]
+    county_name_col = [c for c in df.columns if "NAMELSAD_COUNTY" in c.upper()][0]
+    area_col = [c for c in df.columns if "AREALAND_PART" in c.upper() and "PCT" not in c.upper()]
+
+    if area_col:
+        area_col = area_col[0]
+        df[area_col] = pd.to_numeric(df[area_col], errors="coerce").fillna(0)
+    else:
+        # If no area column, just take first occurrence
+        area_col = None
+
+    df[zcta_col] = df[zcta_col].str.strip().str.zfill(5)
+
+    # For each ZCTA, pick the county with the largest overlap area
+    result: dict[str, str] = {}
+    if area_col:
+        idx = df.groupby(zcta_col)[area_col].idxmax()
+        for i in idx:
+            row = df.loc[i]
+            zcta = row[zcta_col]
+            county = clean_county_name(str(row[county_name_col]))
+            result[zcta] = county
+    else:
+        for _, row in df.drop_duplicates(subset=[zcta_col], keep="first").iterrows():
+            zcta = row[zcta_col]
+            county = clean_county_name(str(row[county_name_col]))
+            result[zcta] = county
+
+    log.info("County mapping built: %d ZCTAs", len(result))
+    return result
+
+
+def download_zcta_place_mapping(session: requests.Session) -> dict[str, str]:
+    """
+    Download the ZCTA-to-Place relationship file.
+    Returns dict: ZCTA (zip) → city name (the place with largest area overlap).
+    """
+    text = download_text(session, ZCTA_PLACE_URL, "ZCTA-Place relationship")
+    df = pd.read_csv(io.StringIO(text), sep="|", dtype=str)
+    log.info("ZCTA-Place file columns: %s", list(df.columns))
+    log.info("ZCTA-Place file rows: %d", len(df))
+
+    zcta_col = [c for c in df.columns if "GEOID_ZCTA" in c.upper()][0]
+    place_name_col = [c for c in df.columns if "NAMELSAD_PLACE" in c.upper()][0]
+    area_col = [c for c in df.columns if "AREALAND_PART" in c.upper() and "PCT" not in c.upper()]
+
+    if area_col:
+        area_col = area_col[0]
+        df[area_col] = pd.to_numeric(df[area_col], errors="coerce").fillna(0)
+    else:
+        area_col = None
+
+    df[zcta_col] = df[zcta_col].str.strip().str.zfill(5)
+
+    result: dict[str, str] = {}
+    if area_col:
+        idx = df.groupby(zcta_col)[area_col].idxmax()
+        for i in idx:
+            row = df.loc[i]
+            zcta = row[zcta_col]
+            city = clean_place_name(str(row[place_name_col]))
+            result[zcta] = city
+    else:
+        for _, row in df.drop_duplicates(subset=[zcta_col], keep="first").iterrows():
+            zcta = row[zcta_col]
+            city = clean_place_name(str(row[place_name_col]))
+            result[zcta] = city
+
+    log.info("Place (city) mapping built: %d ZCTAs", len(result))
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -475,69 +573,64 @@ def build_zip_mapping(session: requests.Session) -> pd.DataFrame:
         )
     log.info("Loading Gazetteer from %s …", GAZETTEER_CSV)
     gaz = pd.read_csv(GAZETTEER_CSV, dtype=str)
-
-    # Standardise column names (script 01 already renamed them)
     gaz["zip"] = gaz["zip"].str.strip().str.zfill(5)
     for col in ["latitude", "longitude"]:
         if col in gaz.columns:
             gaz[col] = pd.to_numeric(gaz[col], errors="coerce")
-
     log.info("Gazetteer loaded: %d ZCTAs", len(gaz))
 
-    # --- City / ZCTA name ---
-    zcta_names = fetch_acs_city_names(session, gaz["zip"].tolist())
+    # --- Download city/county from Census relationship files ---
+    log.info("=== Downloading Census relationship files ===")
+    county_map = download_zcta_county_mapping(session)
+    city_map = download_zcta_place_mapping(session)
+
+    # --- Apply city names ---
+    gaz["city"] = gaz["zip"].map(city_map).fillna("")
 
     # --- State from ZIP prefix ---
     log.info("Inferring state from ZIP prefix …")
     gaz["state"] = gaz["zip"].apply(state_from_zip_prefix)
 
+    # --- State full name ---
+    gaz["state_full"] = gaz["state"].map(STATE_FULL_NAMES).fillna("")
+
+    # --- County ---
+    gaz["county"] = gaz["zip"].map(county_map).fillna("")
+
     # --- Timezone ---
     log.info("Inferring timezone …")
-    lat_col = gaz["latitude"] if "latitude" in gaz.columns else pd.Series([None] * len(gaz))
     lon_col = gaz["longitude"] if "longitude" in gaz.columns else pd.Series([None] * len(gaz))
     gaz["timezone"] = [
         timezone_for_zip(st, ln)
         for st, ln in zip(gaz["state"], lon_col)
     ]
 
+    # --- DST ---
+    gaz["dst"] = gaz["timezone"].apply(dst_for_timezone)
+
+    # --- ZIP type ---
+    gaz["zip_type"] = "STANDARD"
+
     # --- CBSA ---
     log.info("Applying CBSA prefix mapping …")
     cbsa_index = build_cbsa_prefix_index()
-    gaz["cbsa_code"] = ""
-    gaz["cbsa_name"] = ""
-    for idx, row in gaz.iterrows():
+    cbsa_codes = []
+    cbsa_names = []
+    for _, row in gaz.iterrows():
         prefix = str(row["zip"])[:3]
         if prefix in cbsa_index:
-            gaz.at[idx, "cbsa_code"] = cbsa_index[prefix][0]
-            gaz.at[idx, "cbsa_name"] = cbsa_index[prefix][1]
-
-    # --- County via Census Geocoder (sample: first 500 ZIPs with coordinates) ---
-    has_coords = (
-        gaz["latitude"].notna() & gaz["longitude"].notna()
-        if "latitude" in gaz.columns and "longitude" in gaz.columns
-        else pd.Series([False] * len(gaz))
-    )
-    sample = gaz[has_coords].head(500)
-    zip_lat_lon = list(zip(
-        sample["zip"],
-        sample["latitude"],
-        sample["longitude"],
-    ))
-    county_map = fetch_county_for_zips_batch(session, zip_lat_lon)
-
-    gaz["county_fips"] = gaz["zip"].map(lambda z: county_map.get(z, ("", ""))[0])
-    gaz["county_name"] = gaz["zip"].map(lambda z: county_map.get(z, ("", ""))[1])
-
-    # --- ZCTA city name (from ACS NAME field, stripped) ---
-    gaz["city"] = gaz["zip"].map(
-        lambda z: zcta_names.get(z, "").replace("ZCTA5 ", "").strip()
-    )
+            cbsa_codes.append(cbsa_index[prefix][0])
+            cbsa_names.append(cbsa_index[prefix][1])
+        else:
+            cbsa_codes.append("")
+            cbsa_names.append("")
+    gaz["cbsa_code"] = cbsa_codes
+    gaz["cbsa_name"] = cbsa_names
 
     # --- Final column selection ---
     output_cols = [
-        "zip", "city", "state",
-        "county_name", "county_fips",
-        "timezone",
+        "zip", "city", "state", "state_full", "county",
+        "timezone", "dst", "zip_type",
         "cbsa_code", "cbsa_name",
         "latitude", "longitude",
     ]
@@ -568,9 +661,10 @@ def main() -> None:
 
     # Quick summary
     log.info("--- Summary ---")
+    log.info("  ZIPs with city       : %d", df["city"].ne("").sum())
     log.info("  ZIPs with state      : %d", df["state"].ne("").sum())
+    log.info("  ZIPs with county     : %d", df["county"].ne("").sum())
     log.info("  ZIPs with timezone   : %d", df["timezone"].ne("").sum())
-    log.info("  ZIPs with county     : %d", df["county_name"].ne("").sum())
     log.info("  ZIPs with CBSA       : %d", df["cbsa_code"].ne("").sum())
     log.info("=== Done ===")
 
