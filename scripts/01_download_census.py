@@ -27,18 +27,17 @@ from urllib3.util.retry import Retry
 # Configuration
 # ---------------------------------------------------------------------------
 
-CENSUS_API_KEY = os.environ.get("CENSUS_API_KEY", "bce2f6b976e5e03781def23918ecc67b34498ee7")
+CENSUS_API_KEY = os.environ.get("CENSUS_API_KEY", "")
 
 GAZETTEER_URL = (
     "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/"
     "2023_Gazetteer/2023_Gaz_zcta_national.zip"
 )
 
-ACS_URL = (
+ACS_BASE_URL = (
     "https://api.census.gov/data/2022/acs/acs5"
     "?get=NAME,B01003_001E,B19013_001E"
     "&for=zip+code+tabulation+area:*"
-    f"&key={CENSUS_API_KEY}"
 )
 
 RAW_DIR = Path(__file__).resolve().parent.parent / "data" / "raw"
@@ -173,13 +172,62 @@ def download_gazetteer(session: requests.Session) -> pd.DataFrame:
 # Step 2 – ACS 5-year estimates
 # ---------------------------------------------------------------------------
 
+def _build_acs_url(use_key: bool = True) -> str:
+    """Build ACS API URL, optionally including the API key."""
+    url = ACS_BASE_URL
+    if use_key and CENSUS_API_KEY:
+        url += f"&key={CENSUS_API_KEY}"
+    return url
+
+
 def download_acs(session: requests.Session) -> pd.DataFrame:
     """Download ACS 5-year estimates for all ZCTAs."""
-    raw_bytes = download_bytes(session, ACS_URL, "ACS 5-year estimates")
-
-    log.info("Parsing ACS JSON response …")
     import json
-    data = json.loads(raw_bytes.decode("utf-8"))
+
+    # Try with key first, then without key as fallback
+    urls_to_try = []
+    if CENSUS_API_KEY:
+        urls_to_try.append(("with API key", _build_acs_url(use_key=True)))
+    urls_to_try.append(("without API key", _build_acs_url(use_key=False)))
+
+    last_error = None
+    for url_label, acs_url in urls_to_try:
+        for attempt in range(1, MAX_RETRIES + 1):
+            raw_bytes = download_bytes(session, acs_url, f"ACS 5-year estimates ({url_label})")
+            text = raw_bytes.decode("utf-8").strip()
+
+            log.info("Parsing ACS JSON response …")
+            try:
+                data = json.loads(text)
+                if isinstance(data, list) and len(data) > 1:
+                    log.info("  ACS JSON parsed successfully (%d rows)", len(data) - 1)
+                    # Jump to DataFrame creation below
+                    break
+                else:
+                    raise ValueError(f"Unexpected JSON structure: {str(data)[:200]}")
+            except (json.JSONDecodeError, ValueError) as exc:
+                last_error = exc
+                preview = text[:500]
+                log.warning(
+                    "  Attempt %d/%d (%s): ACS response invalid. "
+                    "Preview: %s … (error: %s)",
+                    attempt, MAX_RETRIES, url_label, preview, exc,
+                )
+                if attempt < MAX_RETRIES:
+                    sleep_time = BACKOFF_FACTOR * (2 ** (attempt - 1))
+                    log.info("  Retrying in %.1f s …", sleep_time)
+                    time.sleep(sleep_time)
+        else:
+            # All retries exhausted for this URL variant, try next
+            log.warning("  All retries exhausted %s, trying next variant …", url_label)
+            continue
+        # If inner loop broke (success), break outer loop too
+        break
+    else:
+        raise RuntimeError(
+            f"ACS API did not return valid JSON after all attempts. "
+            f"Last error: {last_error}"
+        )
 
     # First row is headers
     headers = data[0]
