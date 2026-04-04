@@ -1,5 +1,6 @@
 [build]
-  command = "npm run build"
+  # Build is handled by GitHub Actions — Netlify only deploys
+  command = "echo 'Deployed via GitHub Actions'"
   publish = "dist"
 
 [build.environment]

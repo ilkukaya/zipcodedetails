@@ -29,5 +29,12 @@ venv/
 data/raw/
 data/processed/
 
+# Generated ZIP data (built by GitHub Actions pipeline)
+data/zips/*.json
+data/state_index.json
+data/city_index.json
+data/search_index.json
+data/popular_zips.json
+
 # Astro
 .astro/
