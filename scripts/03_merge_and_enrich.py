@@ -235,6 +235,22 @@ def rename_and_enrich(df: pd.DataFrame) -> pd.DataFrame:
         log.info("Adding state_full column from state abbreviation …")
         df["state_full"] = df["state"].map(STATE_FULL_NAMES).fillna("")
 
+    # Fill missing city from county name (strip "County" / "Parish" suffix)
+    if "city" in df.columns and "county" in df.columns:
+        empty_city = df["city"].fillna("").eq("")
+        if empty_city.any():
+            county_as_city = (
+                df.loc[empty_city, "county"]
+                .fillna("")
+                .str.replace(
+                    r'\s+(County|Parish|Borough|Census Area|Municipality|city|Municipio)$',
+                    '', regex=True
+                )
+                .str.strip()
+            )
+            df.loc[empty_city, "city"] = county_as_city
+            log.info("Filled %d missing city values from county name.", empty_city.sum())
+
     # Ensure dst exists
     if "dst" not in df.columns:
         log.info("Adding dst column from timezone …")
