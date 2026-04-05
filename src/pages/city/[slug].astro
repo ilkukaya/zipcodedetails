@@ -6,6 +6,7 @@ import BreadcrumbSchema from '../../components/BreadcrumbSchema.astro';
 import ZipCard from '../../components/ZipCard.astro';
 import StatBlock from '../../components/StatBlock.astro';
 import AdSenseUnit from '../../components/AdSenseUnit.astro';
+import FAQSection from '../../components/FAQSection.astro';
 import { formatNumber, citySlug } from '../../lib/formatters';
 import { cityPageTitle, cityPageDescription } from '../../lib/seo';
 
@@ -27,7 +28,8 @@ const siteUrl = 'https://zipcodedetails.com';
 
 const title = cityPageTitle(info.city, info.state);
 const stateFull = info.state_full || info.state;
-const description = cityPageDescription(info.city, stateFull, info.zips?.length || 0);
+const zipCount = info.zips?.length || 0;
+const description = cityPageDescription(info.city, stateFull, zipCount);
 
 const breadcrumbs = [
   { name: 'Home', url: siteUrl },
@@ -47,9 +49,32 @@ for (const z of (info.zips || [])) {
   } catch { /* skip */ }
 }
 
+// FAQ for city page
+const faqs = [
+  {
+    question: `How many ZIP codes are in ${info.city}, ${info.state}?`,
+    answer: `There are ${zipCount} ZIP code${zipCount !== 1 ? 's' : ''} in ${info.city}, ${stateFull}.${zipCount > 0 ? ` These include: ${info.zips.slice(0, 10).join(', ')}${zipCount > 10 ? `, and ${zipCount - 10} more` : ''}.` : ''}`,
+  },
+  {
+    question: `What county is ${info.city}, ${info.state} in?`,
+    answer: info.county
+      ? `${info.city}, ${stateFull} is located in ${info.county}.`
+      : `County information for ${info.city} is not currently available.`,
+  },
+];
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.question,
+    acceptedAnswer: { '@type': 'Answer', text: f.answer },
+  })),
+};
 ---
 
-<Base title={title} description={description}>
+<Base title={title} description={description} jsonLd={[faqSchema]}>
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <BreadcrumbSchema items={breadcrumbs} />
 
@@ -58,37 +83,26 @@ for (const z of (info.zips || [])) {
         {info.city}, {info.state} ZIP Codes
       </h1>
       <p class="text-slate-500 mt-2">
-        All ZIP codes serving {info.city}, {stateFull}
+        All ZIP codes serving <a href={`/state/${info.state.toLowerCase()}`} class="text-primary hover:underline">{info.city}, {stateFull}</a>
       </p>
     </div>
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-      <StatBlock
-        label="ZIP Codes"
-        value={formatNumber(info.zips?.length || 0)}
-      />
-      <StatBlock
-        label="County"
-        value={info.county || 'N/A'}
-      />
+      <StatBlock label="ZIP Codes" value={formatNumber(zipCount)} />
+      <StatBlock label="County" value={info.county || 'N/A'} />
     </div>
 
     <AdSenseUnit slot="city-top-leaderboard" format="horizontal" />
 
     <section class="mt-8">
       <h2 class="text-xl font-semibold text-slate-900 mb-4">
-        All {formatNumber(info.zips?.length || 0)} ZIP Codes in {info.city}, {info.state}
+        All {formatNumber(zipCount)} ZIP Codes in {info.city}, {info.state}
       </h2>
 
       {cityZips.length > 0 ? (
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {cityZips.sort((a, b) => a.zip.localeCompare(b.zip)).map((z) => (
-            <ZipCard
-              zip={z.zip}
-              city={z.city}
-              state={z.state}
-              county={z.county}
-            />
+            <ZipCard zip={z.zip} city={z.city} state={z.state} county={z.county} />
           ))}
         </div>
       ) : (
@@ -107,6 +121,10 @@ for (const z of (info.zips || [])) {
       )}
     </section>
 
+    <AdSenseUnit slot="city-bottom-leaderboard" format="horizontal" />
+
+    <FAQSection faqs={faqs} />
+
     <div class="mt-8 text-center">
       <a
         href={`/state/${info.state.toLowerCase()}`}
@@ -121,7 +139,7 @@ for (const z of (info.zips || [])) {
 
     <div class="mt-12 text-center">
       <p class="text-xs text-slate-400">
-        Data sourced from <a href="https://www.census.gov/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">US Census Bureau</a> &middot; Free to use
+        Data sourced from <a href="https://www.census.gov/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">US Census Bureau</a> and <a href="https://postalpro.usps.com/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">USPS</a>. This site is for informational purposes only.
       </p>
     </div>
   </div>

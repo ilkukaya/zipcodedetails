@@ -29,14 +29,18 @@ const canonicalUrl = canonical || new URL(Astro.url.pathname, Astro.site).href;
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap"
       rel="stylesheet"
     />
+    <!-- Open Graph -->
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:site_name" content="ZIPCodeDetails.com" />
     {ogImage && <meta property="og:image" content={ogImage} />}
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
+    <!-- Structured Data -->
     {jsonLd && (
       Array.isArray(jsonLd)
         ? jsonLd.map((ld) => (
@@ -44,10 +48,17 @@ const canonicalUrl = canonical || new URL(Astro.url.pathname, Astro.site).href;
           ))
         : <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
     )}
+    <!-- Analytics -->
     <script
       defer
       data-domain="zipcodedetails.com"
       src="https://plausible.io/js/script.js"
+    ></script>
+    <!-- Google AdSense -->
+    <script
+      async
+      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+      crossorigin="anonymous"
     ></script>
   </head>
   <body class="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans antialiased">

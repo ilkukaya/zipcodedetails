@@ -28,7 +28,7 @@ const cities = [
 
 <footer class="bg-slate-900 text-slate-400 mt-16">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
       <div>
         <h3 class="text-white font-semibold text-sm uppercase tracking-wider mb-4">Popular States</h3>
         <ul class="space-y-2">
@@ -56,32 +56,38 @@ const cities = [
       </div>
 
       <div>
-        <h3 class="text-white font-semibold text-sm uppercase tracking-wider mb-4">About</h3>
+        <h3 class="text-white font-semibold text-sm uppercase tracking-wider mb-4">Resources</h3>
         <ul class="space-y-2">
           <li><a href="/about" class="text-sm hover:text-white transition-colors">About Us</a></li>
           <li><a href="/search" class="text-sm hover:text-white transition-colors">Search ZIP Codes</a></li>
+          <li><a href="/privacy" class="text-sm hover:text-white transition-colors">Privacy Policy</a></li>
+          <li><a href="/terms" class="text-sm hover:text-white transition-colors">Terms of Use</a></li>
         </ul>
-        <div class="mt-6">
-          <a href="/" class="flex items-center gap-2 no-underline">
-            <svg class="w-6 h-6 text-primary-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-              <circle cx="12" cy="10" r="3" />
-            </svg>
-            <span class="text-white font-bold">ZIPCodeDetails</span>
-          </a>
-          <p class="text-xs mt-2 leading-relaxed">
-            Free, comprehensive ZIP code data for all 41,000+ US postal codes.
-          </p>
-        </div>
+      </div>
+
+      <div>
+        <a href="/" class="flex items-center gap-2 no-underline">
+          <svg class="w-6 h-6 text-primary-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+            <circle cx="12" cy="10" r="3" />
+          </svg>
+          <span class="text-white font-bold">ZIPCodeDetails</span>
+        </a>
+        <p class="text-xs mt-3 leading-relaxed">
+          Free ZIP code lookup and reference data for the United States. Search by ZIP code, city, or state.
+        </p>
+        <p class="text-xs mt-3 leading-relaxed text-slate-500">
+          This site is for informational purposes only. For official address validation, please use <a href="https://www.usps.com/" rel="nofollow noopener" target="_blank" class="underline hover:text-slate-300">USPS.com</a>.
+        </p>
       </div>
     </div>
 
     <div class="border-t border-slate-800 mt-10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
       <p class="text-xs text-slate-500">
-        Data sourced from <a href="https://www.census.gov/" rel="nofollow noopener" target="_blank" class="underline hover:text-slate-300">US Census Bureau</a> &middot; Free to use
+        Data sourced from <a href="https://www.census.gov/" rel="nofollow noopener" target="_blank" class="underline hover:text-slate-300">US Census Bureau</a> and <a href="https://postalpro.usps.com/" rel="nofollow noopener" target="_blank" class="underline hover:text-slate-300">USPS</a> &middot; Free to use
       </p>
       <p class="text-xs text-slate-500">
-        &copy; {new Date().getFullYear()} ZIPCodeDetails.com
+        &copy; {new Date().getFullYear()} ZIPCodeDetails.com &middot; <a href="/privacy" class="underline hover:text-slate-300">Privacy</a> &middot; <a href="/terms" class="underline hover:text-slate-300">Terms</a>
       </p>
     </div>
   </div>
