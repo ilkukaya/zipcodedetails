@@ -1,0 +1,188 @@
+---
+import fs from 'node:fs';
+import path from 'node:path';
+import Base from '../../layouts/Base.astro';
+import BreadcrumbSchema from '../../components/BreadcrumbSchema.astro';
+import AdSenseUnit from '../../components/AdSenseUnit.astro';
+import FAQSection from '../../components/FAQSection.astro';
+import { formatNumber, formatArea, citySlug } from '../../lib/formatters';
+
+export function getStaticPaths() {
+  const stateIndex = JSON.parse(
+    fs.readFileSync(path.join(process.cwd(), 'data', 'state_index.json'), 'utf-8')
+  );
+  return Object.entries(stateIndex).map(([abbr, info]: [string, any]) => ({
+    params: { state: abbr.toLowerCase() },
+    props: { abbr: abbr.toUpperCase(), info },
+  }));
+}
+
+const { abbr, info } = Astro.props;
+const siteUrl = Astro.site?.origin || 'https://zipcodedetails.netlify.app';
+
+// Load zip data for this state
+const zipsDir = path.join(process.cwd(), 'data', 'zips');
+const stateZips: any[] = [];
+for (const z of (info.zips || [])) {
+  const fp = path.join(zipsDir, `${z}.json`);
+  try {
+    if (fs.existsSync(fp)) {
+      stateZips.push(JSON.parse(fs.readFileSync(fp, 'utf-8')));
+    }
+  } catch { /* skip */ }
+}
+
+// Sort by land area descending for "largest" list
+const byArea = [...stateZips]
+  .filter((z) => z.land_area_sqmi != null && z.land_area_sqmi > 0)
+  .sort((a, b) => (b.land_area_sqmi || 0) - (a.land_area_sqmi || 0))
+  .slice(0, 20);
+
+// Get unique cities with their ZIP counts
+const cityMap = new Map<string, { city: string; state: string; count: number }>();
+for (const z of stateZips) {
+  if (!z.city) continue;
+  const key = z.city;
+  if (cityMap.has(key)) {
+    cityMap.get(key)!.count++;
+  } else {
+    cityMap.set(key, { city: z.city, state: z.state, count: 1 });
+  }
+}
+const topCitiesByZips = Array.from(cityMap.values())
+  .sort((a, b) => b.count - a.count)
+  .slice(0, 15);
+
+const zipCount = info.zip_count || stateZips.length;
+const title = `Top ZIP Codes in ${info.name} — Largest Areas & Most ZIP Codes by City | ZIPCodeDetails.com`;
+const description = `Explore the top ZIP codes in ${info.name}. See the largest ZIP code areas by land size and cities with the most ZIP codes in ${info.name}.`;
+
+const breadcrumbs = [
+  { name: 'Home', url: siteUrl },
+  { name: info.name, url: `${siteUrl}/state/${abbr.toLowerCase()}` },
+  { name: `Top ZIP Codes`, url: `${siteUrl}/top/${abbr.toLowerCase()}` },
+];
+
+const faqs = [
+  {
+    question: `What is the largest ZIP code area in ${info.name}?`,
+    answer: byArea.length > 0
+      ? `The largest ZIP code area in ${info.name} by land size is ${byArea[0].zip} (${byArea[0].city}), covering ${formatArea(byArea[0].land_area_sqmi)}.`
+      : `Land area data for ${info.name} ZIP codes is not yet available.`,
+  },
+  {
+    question: `Which city in ${info.name} has the most ZIP codes?`,
+    answer: topCitiesByZips.length > 0
+      ? `${topCitiesByZips[0].city} has the most ZIP codes in ${info.name} with ${topCitiesByZips[0].count} ZIP codes.`
+      : `City ZIP code count data is not yet available for ${info.name}.`,
+  },
+  {
+    question: `How many ZIP codes are in ${info.name}?`,
+    answer: `${info.name} has ${formatNumber(zipCount)} ZIP code tabulation areas, based on US Census Bureau data.`,
+  },
+];
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.question,
+    acceptedAnswer: { '@type': 'Answer', text: f.answer },
+  })),
+};
+---
+
+<Base title={title} description={description} jsonLd={[faqSchema]}>
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <BreadcrumbSchema items={breadcrumbs} />
+
+    <div class="mb-8">
+      <h1 class="text-3xl sm:text-4xl font-bold text-slate-900">
+        Top ZIP Codes in {info.name}
+      </h1>
+      <p class="text-slate-500 mt-2">
+        Largest ZIP code areas and cities with the most ZIP codes in {info.name}
+      </p>
+    </div>
+
+    <AdSenseUnit slot="top-page-leaderboard" format="horizontal" />
+
+    {topCitiesByZips.length > 0 && (
+      <section class="mt-8">
+        <h2 class="text-xl font-semibold text-slate-900 mb-4">{info.name} Cities with the Most ZIP Codes</h2>
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200">
+                  <th class="text-left px-4 py-3 font-semibold text-slate-700">Rank</th>
+                  <th class="text-left px-4 py-3 font-semibold text-slate-700">City</th>
+                  <th class="text-right px-4 py-3 font-semibold text-slate-700">ZIP Codes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topCitiesByZips.map((c, i) => (
+                  <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                    <td class="px-4 py-3 text-slate-400 font-semibold">{i + 1}</td>
+                    <td class="px-4 py-3">
+                      <a href={`/city/${citySlug(c.city, c.state)}`} class="text-primary font-semibold hover:underline">{c.city}</a>
+                    </td>
+                    <td class="px-4 py-3 text-right tabular-nums font-semibold text-slate-700">{c.count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    )}
+
+    <AdSenseUnit slot="top-page-mid" format="rectangle" />
+
+    {byArea.length > 0 && (
+      <section class="mt-10">
+        <h2 class="text-xl font-semibold text-slate-900 mb-4">Largest ZIP Code Areas in {info.name} by Land Size</h2>
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200">
+                  <th class="text-left px-4 py-3 font-semibold text-slate-700">Rank</th>
+                  <th class="text-left px-4 py-3 font-semibold text-slate-700">ZIP Code</th>
+                  <th class="text-left px-4 py-3 font-semibold text-slate-700">City</th>
+                  <th class="text-left px-4 py-3 font-semibold text-slate-700">County</th>
+                  <th class="text-right px-4 py-3 font-semibold text-slate-700">Land Area</th>
+                </tr>
+              </thead>
+              <tbody>
+                {byArea.map((z, i) => (
+                  <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                    <td class="px-4 py-3 text-slate-400 font-semibold">{i + 1}</td>
+                    <td class="px-4 py-3">
+                      <a href={`/zip/${z.zip}`} class="text-primary font-semibold hover:underline">{z.zip}</a>
+                    </td>
+                    <td class="px-4 py-3 text-slate-700">{z.city}</td>
+                    <td class="px-4 py-3 text-slate-500">{z.county}</td>
+                    <td class="px-4 py-3 text-right tabular-nums text-slate-700">{formatArea(z.land_area_sqmi)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    )}
+
+    <div class="mt-8 text-center">
+      <a href={`/state/${abbr.toLowerCase()}`} class="inline-flex items-center gap-2 text-primary font-medium text-sm hover:underline">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6" /></svg>
+        View all {formatNumber(zipCount)} ZIP codes in {info.name}
+      </a>
+    </div>
+
+    <AdSenseUnit slot="top-page-bottom" format="horizontal" />
+
+    <FAQSection faqs={faqs} />
+  </div>
+</Base>

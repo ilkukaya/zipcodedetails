@@ -1,0 +1,120 @@
+---
+import Base from '../../layouts/Base.astro';
+import BreadcrumbSchema from '../../components/BreadcrumbSchema.astro';
+import AdSenseUnit from '../../components/AdSenseUnit.astro';
+
+const title = 'What Is a ZIP Code? History, Format & Complete Guide | ZIPCodeDetails.com';
+const description = 'Learn what a ZIP code is, how the US ZIP code system works, its history since 1963, and how ZIP codes are assigned to geographic areas.';
+
+const siteUrl = Astro.site?.origin || 'https://zipcodedetails.netlify.app';
+const breadcrumbs = [
+  { name: 'Home', url: siteUrl },
+  { name: 'Guides', url: `${siteUrl}/guides` },
+  { name: 'What Is a ZIP Code?', url: `${siteUrl}/guides/what-is-a-zip-code` },
+];
+
+const faqs = [
+  { question: 'What does ZIP stand for?', answer: 'ZIP stands for "Zone Improvement Plan." It was introduced by the United States Postal Service (USPS) in 1963 to make mail sorting and delivery more efficient.' },
+  { question: 'Are ZIP codes only used in the United States?', answer: 'Yes, ZIP codes are specific to the United States and its territories. Other countries use their own postal code systems with different formats, such as postcodes in the UK or PLZ in Germany.' },
+  { question: 'How are ZIP codes assigned?', answer: 'ZIP codes are assigned by the USPS based on mail delivery routes. The first digit represents a broad geographic region (0 = Northeast, 9 = West Coast), and subsequent digits narrow down to specific areas.' },
+  { question: 'Can two cities share the same ZIP code?', answer: 'Yes. A single ZIP code can span multiple cities, especially in rural areas. Conversely, a large city can have dozens or even hundreds of ZIP codes.' },
+  { question: 'Do ZIP codes change?', answer: 'Yes, USPS occasionally updates ZIP codes. New ZIP codes are created as areas develop, and existing ones may be modified or retired. This is why it is important to verify your ZIP code periodically.' },
+];
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.question,
+    acceptedAnswer: { '@type': 'Answer', text: f.answer },
+  })),
+};
+---
+
+<Base title={title} description={description} jsonLd={[faqSchema]}>
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <BreadcrumbSchema items={breadcrumbs} />
+
+    <article class="prose prose-slate max-w-none">
+      <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">What Is a ZIP Code?</h1>
+      <p class="text-lg text-slate-600 leading-relaxed">
+        A ZIP code is a five-digit postal code used by the United States Postal Service (USPS) to identify
+        specific geographic areas for efficient mail delivery. The acronym "ZIP" stands for
+        <strong>Zone Improvement Plan</strong>.
+      </p>
+
+      <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">History of ZIP Codes</h2>
+      <p class="text-slate-600 leading-relaxed">
+        ZIP codes were introduced on <strong>July 1, 1963</strong> by the USPS (then the US Post Office Department).
+        Before ZIP codes, mail was sorted manually based on city and state names, which was slow and error-prone.
+        The ZIP code system revolutionized mail delivery by enabling automated sorting.
+      </p>
+      <p class="text-slate-600 leading-relaxed">
+        The system was created by Robert Moon, a postal inspector who proposed the idea of a numeric coding
+        system in 1944. His original concept used three digits; the USPS expanded it to five digits for
+        greater precision.
+      </p>
+
+      <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">How ZIP Codes Work</h2>
+      <p class="text-slate-600 leading-relaxed">
+        Each digit in a ZIP code carries geographic meaning:
+      </p>
+      <ul class="list-disc list-inside text-slate-600 space-y-2">
+        <li><strong>First digit (0-9):</strong> Represents a broad region of the US. 0 = Northeast, 9 = West Coast and Hawaii.</li>
+        <li><strong>Second and third digits:</strong> Narrow down to a specific sectional center facility (SCF) — a major mail processing hub.</li>
+        <li><strong>Fourth and fifth digits:</strong> Identify the specific post office or delivery area within the SCF region.</li>
+      </ul>
+      <p class="text-slate-600 leading-relaxed">
+        For example, ZIP code <a href="/zip/90210" class="text-primary hover:underline">90210</a> (Beverly Hills, CA):
+        <strong>9</strong> = West Coast, <strong>02</strong> = Los Angeles area SCF, <strong>10</strong> = Beverly Hills delivery area.
+      </p>
+
+      <AdSenseUnit slot="guide-mid" format="horizontal" />
+
+      <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">ZIP Code vs ZIP+4</h2>
+      <p class="text-slate-600 leading-relaxed">
+        In 1983, the USPS introduced <strong>ZIP+4 codes</strong>, which add a hyphen and four more digits
+        after the standard five-digit ZIP code (e.g., 90210-1234). The extra four digits pinpoint a specific
+        delivery segment such as a city block, apartment building, or PO Box range.
+      </p>
+
+      <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">Types of ZIP Codes</h2>
+      <ul class="list-disc list-inside text-slate-600 space-y-2">
+        <li><strong>Standard:</strong> Regular delivery areas for homes and businesses.</li>
+        <li><strong>PO Box only:</strong> ZIP codes assigned exclusively to post office boxes.</li>
+        <li><strong>Unique:</strong> Assigned to single organizations with high mail volume (e.g., the IRS, large corporations).</li>
+        <li><strong>Military:</strong> Special ZIP codes for APO/FPO military addresses.</li>
+      </ul>
+
+      <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">ZIP Codes by the Numbers</h2>
+      <ul class="list-disc list-inside text-slate-600 space-y-2">
+        <li>There are approximately <strong>33,000+</strong> active ZIP code tabulation areas in the US.</li>
+        <li>The lowest ZIP code is <strong>00501</strong> (Holtsville, NY — IRS processing center).</li>
+        <li>The highest ZIP code is <strong>99950</strong> (Ketchikan, Alaska).</li>
+        <li>New York City has over <strong>200</strong> ZIP codes.</li>
+      </ul>
+
+      <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">Explore ZIP Codes</h2>
+      <p class="text-slate-600 leading-relaxed">
+        Use our free <a href="/search" class="text-primary hover:underline">ZIP code search tool</a> to look up any ZIP code,
+        or <a href="/" class="text-primary hover:underline">browse by state</a> to explore ZIP codes across the United States.
+      </p>
+
+      <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">Frequently Asked Questions</h2>
+      <div class="space-y-4 not-prose">
+        {faqs.map((faq, i) => (
+          <details class="bg-white rounded-lg border border-slate-200 group" open={i === 0}>
+            <summary class="px-5 py-4 cursor-pointer text-sm font-semibold text-slate-800 hover:text-primary transition-colors flex items-center justify-between list-none">
+              <span>{faq.question}</span>
+              <svg class="w-4 h-4 text-slate-400 shrink-0 ml-2 transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9" /></svg>
+            </summary>
+            <div class="px-5 pb-4 text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3">{faq.answer}</div>
+          </details>
+        ))}
+      </div>
+    </article>
+
+    <AdSenseUnit slot="guide-bottom" format="horizontal" />
+  </div>
+</Base>

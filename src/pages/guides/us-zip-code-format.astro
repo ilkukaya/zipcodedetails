@@ -1,0 +1,124 @@
+---
+import Base from '../../layouts/Base.astro';
+import BreadcrumbSchema from '../../components/BreadcrumbSchema.astro';
+import AdSenseUnit from '../../components/AdSenseUnit.astro';
+
+const title = 'US ZIP Code Format Explained — 5-Digit & ZIP+4 Guide | ZIPCodeDetails.com';
+const description = 'Complete guide to US ZIP code format. Learn what each digit means, how ZIP+4 works, and the geographic logic behind ZIP code numbers.';
+
+const siteUrl = Astro.site?.origin || 'https://zipcodedetails.netlify.app';
+const breadcrumbs = [
+  { name: 'Home', url: siteUrl },
+  { name: 'Guides', url: `${siteUrl}/guides` },
+  { name: 'US ZIP Code Format', url: `${siteUrl}/guides/us-zip-code-format` },
+];
+
+const faqs = [
+  { question: 'How many digits is a US ZIP code?', answer: 'A standard US ZIP code has 5 digits. The extended ZIP+4 format has 9 digits (5 + hyphen + 4), like 90210-1234.' },
+  { question: 'What does the first digit of a ZIP code mean?', answer: 'The first digit represents a broad geographic region: 0 = Northeast (CT, MA, ME, NH, NJ, NY, PR, RI, VT, VI), 9 = West Coast (AK, AS, GU, HI, MP, OR, WA). Numbers generally increase from east to west.' },
+  { question: 'What is a ZIP+4 code?', answer: 'ZIP+4 adds four digits after the standard ZIP code to identify a specific delivery segment — like one side of a street, a floor of an office building, or a group of PO boxes. It helps USPS sort mail faster.' },
+  { question: 'Do I need to use ZIP+4 on my mail?', answer: 'No, ZIP+4 is optional for most mail. The standard 5-digit ZIP code is sufficient. However, using ZIP+4 can speed up delivery and is sometimes required for bulk or business mail.' },
+  { question: 'What is the lowest ZIP code in the US?', answer: 'The lowest ZIP code is 00501, assigned to the IRS in Holtsville, New York. The lowest residential ZIP codes start with 00 and are found in Puerto Rico (e.g., 00901 in San Juan).' },
+];
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.question,
+    acceptedAnswer: { '@type': 'Answer', text: f.answer },
+  })),
+};
+---
+
+<Base title={title} description={description} jsonLd={[faqSchema]}>
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <BreadcrumbSchema items={breadcrumbs} />
+
+    <article class="prose prose-slate max-w-none">
+      <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">US ZIP Code Format Explained</h1>
+      <p class="text-lg text-slate-600 leading-relaxed">
+        US ZIP codes follow a logical geographic pattern. Understanding the format helps you identify
+        where any ZIP code is located just by looking at the digits.
+      </p>
+
+      <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">The 5-Digit Format</h2>
+      <p class="text-slate-600 leading-relaxed">Every US ZIP code has exactly 5 digits, structured as follows:</p>
+      <div class="bg-white rounded-xl border border-slate-200 p-6 not-prose my-6">
+        <div class="flex items-center justify-center gap-1 text-4xl font-mono font-bold">
+          <span class="bg-blue-100 text-blue-700 px-3 py-2 rounded">9</span>
+          <span class="bg-green-100 text-green-700 px-3 py-2 rounded">0</span>
+          <span class="bg-green-100 text-green-700 px-3 py-2 rounded">2</span>
+          <span class="bg-amber-100 text-amber-700 px-3 py-2 rounded">1</span>
+          <span class="bg-amber-100 text-amber-700 px-3 py-2 rounded">0</span>
+        </div>
+        <div class="flex justify-center gap-8 mt-4 text-xs text-slate-500">
+          <span class="text-blue-600 font-semibold">Region</span>
+          <span class="text-green-600 font-semibold">SCF Area</span>
+          <span class="text-amber-600 font-semibold">Post Office</span>
+        </div>
+      </div>
+
+      <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">First Digit — Geographic Region</h2>
+      <div class="overflow-x-auto not-prose">
+        <table class="w-full text-sm border border-slate-200 rounded-lg overflow-hidden">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200">
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">First Digit</th>
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">Region</th>
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">States</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b border-slate-100"><td class="px-4 py-3 font-mono font-bold">0</td><td class="px-4 py-3">Northeast</td><td class="px-4 py-3">CT, MA, ME, NH, NJ, NY, PR, RI, VT</td></tr>
+            <tr class="border-b border-slate-100 bg-slate-50/50"><td class="px-4 py-3 font-mono font-bold">1</td><td class="px-4 py-3">Northeast</td><td class="px-4 py-3">DE, NY, PA</td></tr>
+            <tr class="border-b border-slate-100"><td class="px-4 py-3 font-mono font-bold">2</td><td class="px-4 py-3">Mid-Atlantic</td><td class="px-4 py-3">DC, MD, NC, SC, VA, WV</td></tr>
+            <tr class="border-b border-slate-100 bg-slate-50/50"><td class="px-4 py-3 font-mono font-bold">3</td><td class="px-4 py-3">Southeast</td><td class="px-4 py-3">AL, FL, GA, MS, TN</td></tr>
+            <tr class="border-b border-slate-100"><td class="px-4 py-3 font-mono font-bold">4</td><td class="px-4 py-3">Midwest</td><td class="px-4 py-3">IN, KY, MI, OH</td></tr>
+            <tr class="border-b border-slate-100 bg-slate-50/50"><td class="px-4 py-3 font-mono font-bold">5</td><td class="px-4 py-3">Upper Midwest</td><td class="px-4 py-3">IA, MN, MT, ND, SD, WI</td></tr>
+            <tr class="border-b border-slate-100"><td class="px-4 py-3 font-mono font-bold">6</td><td class="px-4 py-3">Central</td><td class="px-4 py-3">IL, KS, MO, NE</td></tr>
+            <tr class="border-b border-slate-100 bg-slate-50/50"><td class="px-4 py-3 font-mono font-bold">7</td><td class="px-4 py-3">South Central</td><td class="px-4 py-3">AR, LA, OK, TX</td></tr>
+            <tr class="border-b border-slate-100"><td class="px-4 py-3 font-mono font-bold">8</td><td class="px-4 py-3">Mountain West</td><td class="px-4 py-3">AZ, CO, ID, NM, NV, UT, WY</td></tr>
+            <tr><td class="px-4 py-3 font-mono font-bold">9</td><td class="px-4 py-3">Pacific West</td><td class="px-4 py-3">AK, CA, HI, OR, WA</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <AdSenseUnit slot="guide-mid" format="horizontal" />
+
+      <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">ZIP+4 Format</h2>
+      <p class="text-slate-600 leading-relaxed">
+        The ZIP+4 code adds a hyphen and four extra digits to the standard ZIP:
+        <strong class="font-mono">90210-1234</strong>. These extra digits narrow down the location to:
+      </p>
+      <ul class="list-disc list-inside text-slate-600 space-y-2">
+        <li>A specific side of a street</li>
+        <li>A floor or department in a large building</li>
+        <li>A group of PO Boxes</li>
+        <li>A single high-volume delivery point</li>
+      </ul>
+
+      <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">Explore ZIP Codes</h2>
+      <p class="text-slate-600 leading-relaxed">
+        Try our <a href="/search" class="text-primary hover:underline">ZIP code search</a> to look up any code,
+        or <a href="/" class="text-primary hover:underline">browse by state</a> to explore the geographic patterns yourself.
+      </p>
+
+      <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">Frequently Asked Questions</h2>
+      <div class="space-y-4 not-prose">
+        {faqs.map((faq, i) => (
+          <details class="bg-white rounded-lg border border-slate-200 group" open={i === 0}>
+            <summary class="px-5 py-4 cursor-pointer text-sm font-semibold text-slate-800 hover:text-primary transition-colors flex items-center justify-between list-none">
+              <span>{faq.question}</span>
+              <svg class="w-4 h-4 text-slate-400 shrink-0 ml-2 transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9" /></svg>
+            </summary>
+            <div class="px-5 pb-4 text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3">{faq.answer}</div>
+          </details>
+        ))}
+      </div>
+    </article>
+
+    <AdSenseUnit slot="guide-bottom" format="horizontal" />
+  </div>
+</Base>

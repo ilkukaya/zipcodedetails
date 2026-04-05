@@ -1,0 +1,110 @@
+---
+import Base from '../../layouts/Base.astro';
+import BreadcrumbSchema from '../../components/BreadcrumbSchema.astro';
+import AdSenseUnit from '../../components/AdSenseUnit.astro';
+
+const title = 'ZIP Code vs Postal Code — What\'s the Difference? | ZIPCodeDetails.com';
+const description = 'Understand the difference between US ZIP codes and international postal codes. Compare formats, usage, and how postal systems work worldwide.';
+
+const siteUrl = Astro.site?.origin || 'https://zipcodedetails.netlify.app';
+const breadcrumbs = [
+  { name: 'Home', url: siteUrl },
+  { name: 'Guides', url: `${siteUrl}/guides` },
+  { name: 'ZIP Code vs Postal Code', url: `${siteUrl}/guides/zip-code-vs-postal-code` },
+];
+
+const faqs = [
+  { question: 'Are ZIP codes and postal codes the same thing?', answer: 'ZIP codes are a type of postal code, but the terms are not interchangeable. "ZIP code" refers specifically to the US system, while "postal code" is the general international term for any country\'s mail routing code system.' },
+  { question: 'Do all countries have postal codes?', answer: 'Most countries have postal code systems, but not all. Some small nations and territories do not use postal codes. Formats vary widely — from 4-digit codes (Australia) to 7-character alphanumeric codes (UK).' },
+  { question: 'Can I use a ZIP code to send mail internationally?', answer: 'No. ZIP codes only work within the US postal system. For international mail, you need the destination country\'s postal code format. Always include the country name on international mail.' },
+  { question: 'Why does the US use "ZIP code" instead of "postal code"?', answer: 'The US Post Office chose the name "ZIP" (Zone Improvement Plan) in 1963 as a catchy acronym to encourage public adoption. The name stuck and became part of everyday American vocabulary.' },
+];
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.question,
+    acceptedAnswer: { '@type': 'Answer', text: f.answer },
+  })),
+};
+---
+
+<Base title={title} description={description} jsonLd={[faqSchema]}>
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <BreadcrumbSchema items={breadcrumbs} />
+
+    <article class="prose prose-slate max-w-none">
+      <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">ZIP Code vs Postal Code — What's the Difference?</h1>
+      <p class="text-lg text-slate-600 leading-relaxed">
+        If you've ever filled out an international form, you've probably noticed that some ask for a "ZIP code"
+        while others ask for a "postal code." Here's what you need to know about the difference.
+      </p>
+
+      <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">The Short Answer</h2>
+      <p class="text-slate-600 leading-relaxed">
+        <strong>A ZIP code is a type of postal code.</strong> "ZIP code" is the specific name used in the
+        United States, while "postal code" is the universal term used worldwide. Every ZIP code is a postal
+        code, but not every postal code is a ZIP code.
+      </p>
+
+      <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">US ZIP Code Format</h2>
+      <ul class="list-disc list-inside text-slate-600 space-y-2">
+        <li><strong>Format:</strong> 5 digits (e.g., 90210) or 9 digits with ZIP+4 (e.g., 90210-1234)</li>
+        <li><strong>Characters:</strong> Numbers only</li>
+        <li><strong>Managed by:</strong> United States Postal Service (USPS)</li>
+        <li><strong>Introduced:</strong> 1963</li>
+        <li><strong>Coverage:</strong> US states, territories, and military addresses</li>
+      </ul>
+
+      <AdSenseUnit slot="guide-mid" format="horizontal" />
+
+      <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">International Postal Code Formats</h2>
+      <div class="overflow-x-auto not-prose">
+        <table class="w-full text-sm border border-slate-200 rounded-lg overflow-hidden">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200">
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">Country</th>
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">Name</th>
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">Format</th>
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">Example</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b border-slate-100"><td class="px-4 py-3">United States</td><td class="px-4 py-3">ZIP Code</td><td class="px-4 py-3">5 digits</td><td class="px-4 py-3 font-mono">90210</td></tr>
+            <tr class="border-b border-slate-100 bg-slate-50/50"><td class="px-4 py-3">United Kingdom</td><td class="px-4 py-3">Postcode</td><td class="px-4 py-3">5-7 alphanumeric</td><td class="px-4 py-3 font-mono">SW1A 1AA</td></tr>
+            <tr class="border-b border-slate-100"><td class="px-4 py-3">Canada</td><td class="px-4 py-3">Postal Code</td><td class="px-4 py-3">6 alphanumeric</td><td class="px-4 py-3 font-mono">K1A 0A9</td></tr>
+            <tr class="border-b border-slate-100 bg-slate-50/50"><td class="px-4 py-3">Germany</td><td class="px-4 py-3">PLZ</td><td class="px-4 py-3">5 digits</td><td class="px-4 py-3 font-mono">10115</td></tr>
+            <tr class="border-b border-slate-100"><td class="px-4 py-3">Japan</td><td class="px-4 py-3">Postal Code</td><td class="px-4 py-3">7 digits</td><td class="px-4 py-3 font-mono">100-0001</td></tr>
+            <tr class="border-b border-slate-100 bg-slate-50/50"><td class="px-4 py-3">Australia</td><td class="px-4 py-3">Postcode</td><td class="px-4 py-3">4 digits</td><td class="px-4 py-3 font-mono">2000</td></tr>
+            <tr><td class="px-4 py-3">India</td><td class="px-4 py-3">PIN Code</td><td class="px-4 py-3">6 digits</td><td class="px-4 py-3 font-mono">110001</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">Key Differences</h2>
+      <ul class="list-disc list-inside text-slate-600 space-y-2">
+        <li><strong>Terminology:</strong> "ZIP code" is US-specific; "postal code" is the international standard.</li>
+        <li><strong>Format:</strong> ZIP codes are numeric only; many countries use alphanumeric codes.</li>
+        <li><strong>Length:</strong> ZIP codes are 5 or 9 digits; international codes range from 3 to 10 characters.</li>
+        <li><strong>Usage:</strong> ZIP codes work only in the US; each country has its own independent system.</li>
+      </ul>
+
+      <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">Frequently Asked Questions</h2>
+      <div class="space-y-4 not-prose">
+        {faqs.map((faq, i) => (
+          <details class="bg-white rounded-lg border border-slate-200 group" open={i === 0}>
+            <summary class="px-5 py-4 cursor-pointer text-sm font-semibold text-slate-800 hover:text-primary transition-colors flex items-center justify-between list-none">
+              <span>{faq.question}</span>
+              <svg class="w-4 h-4 text-slate-400 shrink-0 ml-2 transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9" /></svg>
+            </summary>
+            <div class="px-5 pb-4 text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3">{faq.answer}</div>
+          </details>
+        ))}
+      </div>
+    </article>
+
+    <AdSenseUnit slot="guide-bottom" format="horizontal" />
+  </div>
+</Base>

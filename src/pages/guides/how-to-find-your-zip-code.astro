@@ -1,0 +1,104 @@
+---
+import Base from '../../layouts/Base.astro';
+import BreadcrumbSchema from '../../components/BreadcrumbSchema.astro';
+import AdSenseUnit from '../../components/AdSenseUnit.astro';
+
+const title = 'How to Find Your ZIP Code — 5 Easy Methods | ZIPCodeDetails.com';
+const description = 'Learn how to find any US ZIP code. Search by address, city, state, or use our free online lookup tool. Find your ZIP code in seconds.';
+
+const siteUrl = Astro.site?.origin || 'https://zipcodedetails.netlify.app';
+const breadcrumbs = [
+  { name: 'Home', url: siteUrl },
+  { name: 'Guides', url: `${siteUrl}/guides` },
+  { name: 'How to Find Your ZIP Code', url: `${siteUrl}/guides/how-to-find-your-zip-code` },
+];
+
+const faqs = [
+  { question: 'How do I find my ZIP code online?', answer: 'The fastest way is to use a free ZIP code lookup tool like ZIPCodeDetails.com. Simply type your city name, state, or partial address in the search box to see matching ZIP codes instantly.' },
+  { question: 'Can I find a ZIP code by address?', answer: 'Yes. Enter your street address, city, or state in a ZIP code search tool. You can also look up ZIP codes on USPS.com using their address lookup feature for official validation.' },
+  { question: 'How do I find someone else\'s ZIP code?', answer: 'If you know their city and state, search for that city on a ZIP code lookup tool to see all ZIP codes in that area. Most cities have multiple ZIP codes.' },
+  { question: 'What if my city has multiple ZIP codes?', answer: 'Many cities are served by multiple ZIP codes. Each ZIP code covers a specific area within the city. Your exact ZIP depends on your street address. Check your mail or utility bills for your specific ZIP code.' },
+];
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.question,
+    acceptedAnswer: { '@type': 'Answer', text: f.answer },
+  })),
+};
+---
+
+<Base title={title} description={description} jsonLd={[faqSchema]}>
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <BreadcrumbSchema items={breadcrumbs} />
+
+    <article class="prose prose-slate max-w-none">
+      <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">How to Find Your ZIP Code</h1>
+      <p class="text-lg text-slate-600 leading-relaxed">
+        Need to find a ZIP code? Whether you're filling out a form, sending mail, or looking up a location,
+        there are several quick and easy ways to find any US ZIP code.
+      </p>
+
+      <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">Method 1: Use Our Free Search Tool</h2>
+      <p class="text-slate-600 leading-relaxed">
+        The fastest way to find a ZIP code is to use our <a href="/search" class="text-primary hover:underline">ZIP code search tool</a>.
+        Simply type a city name, state, or ZIP code number and matching results appear instantly.
+      </p>
+
+      <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">Method 2: Check Your Mail</h2>
+      <p class="text-slate-600 leading-relaxed">
+        Look at any piece of mail delivered to your address. Your ZIP code is the 5-digit number
+        at the end of your address (or the 9-digit ZIP+4 code if shown). This is the most reliable
+        method for your exact ZIP code.
+      </p>
+
+      <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">Method 3: Browse by State</h2>
+      <p class="text-slate-600 leading-relaxed">
+        If you know the state, you can <a href="/" class="text-primary hover:underline">browse all ZIP codes by state</a>
+        on our homepage. Click any state to see all its ZIP codes organized by city.
+      </p>
+
+      <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">Method 4: Use USPS.com</h2>
+      <p class="text-slate-600 leading-relaxed">
+        For official address validation, visit
+        <a href="https://www.usps.com/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">USPS.com</a>
+        and use their ZIP Code Lookup tool. This is the authoritative source for USPS delivery ZIP codes.
+      </p>
+
+      <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">Method 5: Search by City Name</h2>
+      <p class="text-slate-600 leading-relaxed">
+        If you know the city and state, search for it on our site. For example, searching "Beverly Hills"
+        will show you all ZIP codes in Beverly Hills, California. Most large cities have multiple ZIP codes
+        covering different neighborhoods.
+      </p>
+
+      <AdSenseUnit slot="guide-mid" format="horizontal" />
+
+      <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">Tips for Finding the Right ZIP Code</h2>
+      <ul class="list-disc list-inside text-slate-600 space-y-2">
+        <li><strong>Large cities have many ZIP codes.</strong> New York City alone has over 200 ZIP codes.</li>
+        <li><strong>ZIP codes can cross city boundaries.</strong> Some ZIP codes serve multiple towns.</li>
+        <li><strong>PO Boxes have their own ZIP codes.</strong> Your PO Box ZIP may differ from your home address ZIP.</li>
+        <li><strong>ZIP codes change over time.</strong> USPS occasionally adds, removes, or reassigns ZIP codes.</li>
+      </ul>
+
+      <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">Frequently Asked Questions</h2>
+      <div class="space-y-4 not-prose">
+        {faqs.map((faq, i) => (
+          <details class="bg-white rounded-lg border border-slate-200 group" open={i === 0}>
+            <summary class="px-5 py-4 cursor-pointer text-sm font-semibold text-slate-800 hover:text-primary transition-colors flex items-center justify-between list-none">
+              <span>{faq.question}</span>
+              <svg class="w-4 h-4 text-slate-400 shrink-0 ml-2 transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9" /></svg>
+            </summary>
+            <div class="px-5 pb-4 text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3">{faq.answer}</div>
+          </details>
+        ))}
+      </div>
+    </article>
+
+    <AdSenseUnit slot="guide-bottom" format="horizontal" />
+  </div>
+</Base>
