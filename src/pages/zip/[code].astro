@@ -6,10 +6,10 @@ import StatBlock from '../../components/StatBlock.astro';
 import BreadcrumbSchema from '../../components/BreadcrumbSchema.astro';
 import MiniMap from '../../components/MiniMap.astro';
 import NearbyZips from '../../components/NearbyZips.astro';
-import IncomeChart from '../../components/IncomeChart.astro';
+
 import FAQSection from '../../components/FAQSection.astro';
 import AdSenseUnit from '../../components/AdSenseUnit.astro';
-import { formatNumber, formatCurrency, formatArea, formatCoordinates, getTimezoneAbbr, getTimezoneName } from '../../lib/formatters';
+import { formatArea, formatCoordinates, getTimezoneAbbr, getTimezoneName } from '../../lib/formatters';
 import { zipPageTitle, zipPageDescription } from '../../lib/seo';
 
 export function getStaticPaths() {
@@ -49,18 +49,6 @@ const faqs = [
   {
     question: `What county is ${data.zip} in?`,
     answer: `ZIP code ${data.zip} is in ${data.county}, ${data.state_full}.`,
-  },
-  {
-    question: `What is the population of ZIP code ${data.zip}?`,
-    answer: data.population != null
-      ? `The estimated population of ZIP code ${data.zip} is ${formatNumber(data.population)}, based on US Census Bureau data.`
-      : `Population data is not available for ZIP code ${data.zip}.`,
-  },
-  {
-    question: `What is the median household income in ZIP ${data.zip}?`,
-    answer: data.median_household_income != null
-      ? `The median household income in ZIP code ${data.zip} is ${formatCurrency(data.median_household_income)}, according to American Community Survey estimates.`
-      : `Median household income data is not available for ZIP code ${data.zip}.`,
   },
 ];
 
@@ -108,21 +96,20 @@ const tzName = getTimezoneName(data.timezone);
         ZIP Code {data.zip} — {data.city}, {data.state}
       </h1>
       <p class="text-slate-500 mt-2">
-        Detailed demographics and location data for ZIP {data.zip}
+        Location and geographic details for ZIP {data.zip}
       </p>
     </div>
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       <StatBlock
-        label="Population"
-        value={formatNumber(data.population)}
-        icon='<svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
+        label="ZIP Type"
+        value={data.zip_type || 'Standard'}
+        icon='<svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>'
       />
       <StatBlock
-        label="Median Income"
-        value={formatCurrency(data.median_household_income)}
-        accent={true}
-        icon='<svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>'
+        label="County"
+        value={data.county || 'N/A'}
+        icon='<svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>'
       />
       <StatBlock
         label="Land Area"
@@ -184,18 +171,6 @@ const tzName = getTimezoneName(data.timezone);
           </dl>
         </section>
 
-        {data.median_household_income != null && data.median_household_income > 0 && (
-          <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h2 class="text-xl font-semibold text-slate-900 mb-4">Income Comparison</h2>
-            <IncomeChart
-              zipIncome={data.median_household_income}
-              zipLabel={`ZIP ${data.zip}`}
-              countyLabel={data.county}
-              stateLabel={data.state_full}
-            />
-          </section>
-        )}
-
         <AdSenseUnit slot="zip-mid-rectangle" format="rectangle" />
 
         <NearbyZips zips={data.surrounding_zips || []} />
@@ -236,7 +211,7 @@ const tzName = getTimezoneName(data.timezone);
 
         <div class="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl border border-primary/20 p-5">
           <p class="text-xs text-slate-500 leading-relaxed">
-            Data sourced from the <a href="https://www.census.gov/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">US Census Bureau</a> American Community Survey (ACS) 5-Year Estimates. Population and income figures are estimates and may differ from actual counts.
+            Data sourced from the <a href="https://www.census.gov/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">US Census Bureau</a> and <a href="https://postalpro.usps.com/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">USPS</a>. Geographic and location data is based on Census Gazetteer files and USPS postal data.
           </p>
         </div>
       </aside>

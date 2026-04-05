@@ -8,7 +8,7 @@ import ZipCard from '../../components/ZipCard.astro';
 import StatBlock from '../../components/StatBlock.astro';
 import AdSenseUnit from '../../components/AdSenseUnit.astro';
 import StateMap from '../../components/StateMap.astro';
-import { formatNumber, formatCurrency, citySlug } from '../../lib/formatters';
+import { formatNumber, citySlug } from '../../lib/formatters';
 import { statePageTitle, statePageDescription } from '../../lib/seo';
 
 export function getStaticPaths() {
@@ -44,11 +44,6 @@ for (const z of (info.zips || [])) {
   } catch { /* skip */ }
 }
 
-// Calculate state-level stats from available data
-const totalPop = stateZips.reduce((s, z) => s + (z.population || 0), 0);
-const incomes = stateZips.filter((z) => z.median_household_income != null && z.median_household_income > 0).map((z) => z.median_household_income);
-const avgIncome = incomes.length > 0 ? Math.round(incomes.reduce((a: number, b: number) => a + b, 0) / incomes.length) : null;
-
 // Get unique cities
 const cities = [...new Set(stateZips.map((z) => z.city))].sort();
 const topCities = cities.slice(0, 20);
@@ -79,15 +74,6 @@ const allZipCodes = info.zips || [];
       <StatBlock
         label="Cities"
         value={formatNumber(cities.length || info.cities?.length || 0)}
-      />
-      <StatBlock
-        label="Population"
-        value={totalPop > 0 ? formatNumber(totalPop) : formatNumber(info.population)}
-      />
-      <StatBlock
-        label="Avg. Income"
-        value={avgIncome ? formatCurrency(avgIncome) : 'N/A'}
-        accent={true}
       />
     </div>
 
@@ -125,9 +111,7 @@ const allZipCodes = info.zips || [];
                     <tr class="bg-slate-50 border-b border-slate-200">
                       <th class="text-left px-4 py-3 font-semibold text-slate-700">ZIP</th>
                       <th class="text-left px-4 py-3 font-semibold text-slate-700">City</th>
-                      <th class="text-left px-4 py-3 font-semibold text-slate-700 hidden sm:table-cell">County</th>
-                      <th class="text-right px-4 py-3 font-semibold text-slate-700">Population</th>
-                      <th class="text-right px-4 py-3 font-semibold text-slate-700 hidden md:table-cell">Income</th>
+                      <th class="text-left px-4 py-3 font-semibold text-slate-700">County</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -137,9 +121,7 @@ const allZipCodes = info.zips || [];
                           <a href={`/zip/${z.zip}`} class="text-primary font-semibold hover:underline">{z.zip}</a>
                         </td>
                         <td class="px-4 py-3 text-slate-700">{z.city}</td>
-                        <td class="px-4 py-3 text-slate-500 hidden sm:table-cell">{z.county}</td>
-                        <td class="px-4 py-3 text-right tabular-nums text-slate-700">{formatNumber(z.population)}</td>
-                        <td class="px-4 py-3 text-right tabular-nums text-slate-700 hidden md:table-cell">{formatCurrency(z.median_household_income)}</td>
+                        <td class="px-4 py-3 text-slate-500">{z.county}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -170,7 +152,7 @@ const allZipCodes = info.zips || [];
 
         <div class="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl border border-primary/20 p-5">
           <p class="text-xs text-slate-500 leading-relaxed">
-            Data sourced from the <a href="https://www.census.gov/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">US Census Bureau</a>. Population and income figures are estimates from the American Community Survey.
+            Data sourced from the <a href="https://www.census.gov/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">US Census Bureau</a> and <a href="https://postalpro.usps.com/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">USPS</a>.
           </p>
         </div>
       </aside>
