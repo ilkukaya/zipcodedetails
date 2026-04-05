@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { APIRoute } from 'astro';
 
-const SITE = 'https://zipcodedetails.com';
+const SITE = 'https://zipcodedetails.netlify.app';
 
 export const GET: APIRoute = () => {
   const stateIndex = JSON.parse(

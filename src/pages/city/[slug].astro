@@ -24,7 +24,7 @@ export function getStaticPaths() {
 }
 
 const { info } = Astro.props;
-const siteUrl = 'https://zipcodedetails.com';
+const siteUrl = Astro.site?.origin || 'https://zipcodedetails.netlify.app';
 
 const title = cityPageTitle(info.city, info.state);
 const stateFull = info.state_full || info.state;

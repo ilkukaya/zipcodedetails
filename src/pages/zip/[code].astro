@@ -27,13 +27,13 @@ const { data } = Astro.props;
 const title = zipPageTitle(data);
 const description = zipPageDescription(data);
 
-const siteUrl = 'https://zipcodedetails.com';
-const cityUrl = `${siteUrl}/city/${citySlug(data.city, data.state)}`;
+const siteUrl = Astro.site?.origin || 'https://zipcodedetails.netlify.app';
+const cityPath = `/city/${citySlug(data.city, data.state)}`;
 
 const breadcrumbs = [
   { name: 'Home', url: siteUrl },
   { name: data.state_full, url: `${siteUrl}/state/${data.state.toLowerCase()}` },
-  { name: `${data.city}, ${data.state}`, url: cityUrl },
+  { name: `${data.city}, ${data.state}`, url: `${siteUrl}${cityPath}` },
   { name: `ZIP ${data.zip}`, url: `${siteUrl}/zip/${data.zip}` },
 ];
 
@@ -100,7 +100,7 @@ const tzName = getTimezoneName(data.timezone);
       </h1>
       <p class="text-slate-500 mt-2">
         Location and geographic details for ZIP {data.zip} in
-        <a href={cityUrl} class="text-primary hover:underline">{data.city}</a>,
+        <a href={cityPath} class="text-primary hover:underline">{data.city}</a>,
         <a href={`/state/${data.state.toLowerCase()}`} class="text-primary hover:underline">{data.state_full}</a>
       </p>
     </div>
@@ -138,7 +138,7 @@ const tzName = getTimezoneName(data.timezone);
             <div>
               <dt class="text-xs font-medium text-slate-500 uppercase tracking-wider">City</dt>
               <dd class="text-sm font-semibold text-slate-800 mt-1">
-                <a href={cityUrl} class="text-primary hover:underline">{data.city}</a>
+                <a href={cityPath} class="text-primary hover:underline">{data.city}</a>
               </dd>
             </div>
             <div>
@@ -186,7 +186,7 @@ const tzName = getTimezoneName(data.timezone);
         <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <h2 class="text-xl font-semibold text-slate-900 mb-4">Explore More</h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <a href={cityUrl} class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-primary/30 hover:shadow-sm transition-all no-underline group">
+            <a href={cityPath} class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-primary/30 hover:shadow-sm transition-all no-underline group">
               <svg class="w-5 h-5 text-slate-400 group-hover:text-primary transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
               <div>
                 <p class="text-sm font-semibold text-slate-700 group-hover:text-primary transition-colors">All ZIP Codes in {data.city}, {data.state}</p>
@@ -218,7 +218,7 @@ const tzName = getTimezoneName(data.timezone);
             </li>
             <li class="flex justify-between border-t border-slate-100 pt-2">
               <span class="text-slate-500">City</span>
-              <a href={cityUrl} class="font-semibold text-primary hover:underline">{data.city}</a>
+              <a href={cityPath} class="font-semibold text-primary hover:underline">{data.city}</a>
             </li>
             <li class="flex justify-between border-t border-slate-100 pt-2">
               <span class="text-slate-500">State</span>

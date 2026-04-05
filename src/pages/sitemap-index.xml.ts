@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { APIRoute } from 'astro';
 
-const SITE = 'https://zipcodedetails.com';
+const SITE = 'https://zipcodedetails.netlify.app';
 const ZIPS_PER_SITEMAP = 10000;
 
 export const GET: APIRoute = () => {
