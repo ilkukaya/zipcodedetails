@@ -584,6 +584,36 @@ def download_zcta_place_mapping(session: requests.Session) -> dict[str, str]:
 # Main assembly
 # ---------------------------------------------------------------------------
 
+def load_usps_locale(usps_path: Path) -> dict[str, str]:
+    """
+    Load the USPS ZIP_Locale_Detail file and return a dict: ZIP → locale name.
+    Uses the ZIP_DETAIL sheet, taking the first locale name per ZIP.
+    """
+    if not usps_path.exists():
+        log.warning("USPS locale file not found at %s — skipping.", usps_path)
+        return {}
+
+    log.info("Loading USPS ZIP_Locale_Detail from %s …", usps_path)
+    try:
+        import xlrd
+        wb = xlrd.open_workbook(str(usps_path))
+        ws = wb.sheet_by_name("ZIP_DETAIL")
+
+        result: dict[str, str] = {}
+        for i in range(1, ws.nrows):
+            zip_code = str(ws.cell_value(i, 4)).strip().zfill(5)
+            locale_name = str(ws.cell_value(i, 5)).strip()
+            if zip_code and locale_name and zip_code not in result:
+                # Title-case the locale name (USPS uses uppercase)
+                result[zip_code] = locale_name.title()
+
+        log.info("USPS locale mapping loaded: %d ZIPs", len(result))
+        return result
+    except Exception as exc:
+        log.warning("Failed to read USPS locale file: %s", exc)
+        return {}
+
+
 def build_zip_mapping(session: requests.Session) -> pd.DataFrame:
     # --- Load Gazetteer ---
     if not GAZETTEER_CSV.exists():
@@ -604,8 +634,21 @@ def build_zip_mapping(session: requests.Session) -> pd.DataFrame:
     county_map = download_zcta_county_mapping(session)
     city_map = download_zcta_place_mapping(session)
 
-    # --- Apply city names ---
-    gaz["city"] = gaz["zip"].map(city_map).fillna("")
+    # --- Load USPS locale data as supplementary city source ---
+    usps_path = Path(__file__).resolve().parent.parent / "data" / "ZIP_Locale_Detail.xls"
+    usps_locale_map = load_usps_locale(usps_path)
+
+    # --- Apply city names (prefer USPS locale, fall back to Census place) ---
+    def get_city(zip_code: str) -> str:
+        # USPS locale name is the official postal name for the ZIP
+        if zip_code in usps_locale_map:
+            return usps_locale_map[zip_code]
+        # Fall back to Census place name
+        if zip_code in city_map:
+            return city_map[zip_code]
+        return ""
+
+    gaz["city"] = gaz["zip"].apply(get_city)
 
     # --- State from ZIP prefix ---
     log.info("Inferring state from ZIP prefix …")

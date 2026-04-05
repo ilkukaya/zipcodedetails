@@ -3,17 +3,14 @@
 
 Downloads US Census Bureau data needed for the ZIP code reference website:
   1. Census Gazetteer 2023 ZCTA file (geography: land area, water area, lat, lon)
-  2. ACS 5-year estimates 2022 (population, median household income)
 
 Outputs
 -------
 data/raw/gazetteer.csv
-data/raw/acs_data.csv
 """
 
 import io
 import logging
-import os
 import time
 import zipfile
 from pathlib import Path
@@ -27,22 +24,13 @@ from urllib3.util.retry import Retry
 # Configuration
 # ---------------------------------------------------------------------------
 
-CENSUS_API_KEY = os.environ.get("CENSUS_API_KEY", "")
-
 GAZETTEER_URL = (
     "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/"
     "2023_Gazetteer/2023_Gaz_zcta_national.zip"
 )
 
-ACS_BASE_URL = (
-    "https://api.census.gov/data/2022/acs/acs5"
-    "?get=NAME,B01003_001E,B19013_001E"
-    "&for=zip+code+tabulation+area:*"
-)
-
 RAW_DIR = Path(__file__).resolve().parent.parent / "data" / "raw"
 GAZETTEER_OUT = RAW_DIR / "gazetteer.csv"
-ACS_OUT = RAW_DIR / "acs_data.csv"
 
 # Retry configuration
 MAX_RETRIES = 5
@@ -169,97 +157,6 @@ def download_gazetteer(session: requests.Session) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# Step 2 – ACS 5-year estimates
-# ---------------------------------------------------------------------------
-
-def _build_acs_url(use_key: bool = True) -> str:
-    """Build ACS API URL, optionally including the API key."""
-    url = ACS_BASE_URL
-    if use_key and CENSUS_API_KEY:
-        url += f"&key={CENSUS_API_KEY}"
-    return url
-
-
-def download_acs(session: requests.Session) -> pd.DataFrame:
-    """Download ACS 5-year estimates for all ZCTAs."""
-    import json
-
-    # Try with key first, then without key as fallback
-    urls_to_try = []
-    if CENSUS_API_KEY:
-        urls_to_try.append(("with API key", _build_acs_url(use_key=True)))
-    urls_to_try.append(("without API key", _build_acs_url(use_key=False)))
-
-    last_error = None
-    for url_label, acs_url in urls_to_try:
-        for attempt in range(1, MAX_RETRIES + 1):
-            raw_bytes = download_bytes(session, acs_url, f"ACS 5-year estimates ({url_label})")
-            text = raw_bytes.decode("utf-8").strip()
-
-            log.info("Parsing ACS JSON response …")
-            try:
-                data = json.loads(text)
-                if isinstance(data, list) and len(data) > 1:
-                    log.info("  ACS JSON parsed successfully (%d rows)", len(data) - 1)
-                    # Jump to DataFrame creation below
-                    break
-                else:
-                    raise ValueError(f"Unexpected JSON structure: {str(data)[:200]}")
-            except (json.JSONDecodeError, ValueError) as exc:
-                last_error = exc
-                preview = text[:500]
-                log.warning(
-                    "  Attempt %d/%d (%s): ACS response invalid. "
-                    "Preview: %s … (error: %s)",
-                    attempt, MAX_RETRIES, url_label, preview, exc,
-                )
-                if attempt < MAX_RETRIES:
-                    sleep_time = BACKOFF_FACTOR * (2 ** (attempt - 1))
-                    log.info("  Retrying in %.1f s …", sleep_time)
-                    time.sleep(sleep_time)
-        else:
-            # All retries exhausted for this URL variant, try next
-            log.warning("  All retries exhausted %s, trying next variant …", url_label)
-            continue
-        # If inner loop broke (success), break outer loop too
-        break
-    else:
-        raise RuntimeError(
-            f"ACS API did not return valid JSON after all attempts. "
-            f"Last error: {last_error}"
-        )
-
-    # First row is headers
-    headers = data[0]
-    rows = data[1:]
-    df = pd.DataFrame(rows, columns=headers)
-
-    log.info("ACS raw columns: %s", list(df.columns))
-
-    # Rename to friendly names
-    rename_map = {
-        "zip code tabulation area": "zip",
-        "B01003_001E": "population",
-        "B19013_001E": "median_household_income",
-        "NAME": "zcta_name",
-    }
-    rename_map = {k: v for k, v in rename_map.items() if k in df.columns}
-    df = df.rename(columns=rename_map)
-
-    if "zip" in df.columns:
-        df["zip"] = df["zip"].str.strip().str.zfill(5)
-
-    for col in ["population", "median_household_income"]:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
-            # Census uses -666666666 as a sentinel for missing
-            df.loc[df[col] < -99999, col] = pd.NA
-
-    log.info("ACS records: %d", len(df))
-    return df
-
-
-# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -270,16 +167,10 @@ def main() -> None:
     session = build_session()
 
     # --- Gazetteer ---
-    log.info("=== Step 1/2: Census Gazetteer ===")
+    log.info("=== Step 1/1: Census Gazetteer ===")
     gazetteer_df = download_gazetteer(session)
     gazetteer_df.to_csv(GAZETTEER_OUT, index=False)
     log.info("Saved Gazetteer → %s  (%d rows)", GAZETTEER_OUT, len(gazetteer_df))
-
-    # --- ACS ---
-    log.info("=== Step 2/2: ACS 5-year estimates ===")
-    acs_df = download_acs(session)
-    acs_df.to_csv(ACS_OUT, index=False)
-    log.info("Saved ACS data → %s  (%d rows)", ACS_OUT, len(acs_df))
 
     log.info("=== Download complete ===")
 
