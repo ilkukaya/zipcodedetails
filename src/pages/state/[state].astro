@@ -4,9 +4,9 @@ import path from 'node:path';
 import Base from '../../layouts/Base.astro';
 import BreadcrumbSchema from '../../components/BreadcrumbSchema.astro';
 import SearchBox from '../../components/SearchBox.astro';
-import ZipCard from '../../components/ZipCard.astro';
 import StatBlock from '../../components/StatBlock.astro';
 import AdSenseUnit from '../../components/AdSenseUnit.astro';
+import FAQSection from '../../components/FAQSection.astro';
 import StateMap from '../../components/StateMap.astro';
 import { formatNumber, citySlug } from '../../lib/formatters';
 import { statePageTitle, statePageDescription } from '../../lib/seo';
@@ -48,12 +48,35 @@ for (const z of (info.zips || [])) {
 const cities = [...new Set(stateZips.map((z) => z.city))].sort();
 const topCities = cities.slice(0, 20);
 
-// Pagination
-const ITEMS_PER_PAGE = 100;
 const allZipCodes = info.zips || [];
+const zipCount = info.zip_count || allZipCodes.length;
+
+// FAQ for state page
+const faqs = [
+  {
+    question: `How many ZIP codes are in ${info.name}?`,
+    answer: `There are ${formatNumber(zipCount)} ZIP code tabulation areas in ${info.name}, based on US Census Bureau data.`,
+  },
+  {
+    question: `What cities are in ${info.name}?`,
+    answer: cities.length > 0
+      ? `${info.name} has ZIP codes across ${formatNumber(cities.length)} cities and places. Some of the major cities include ${topCities.slice(0, 5).join(', ')}.`
+      : `City data for ${info.name} will be available after the full data build.`,
+  },
+];
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.question,
+    acceptedAnswer: { '@type': 'Answer', text: f.answer },
+  })),
+};
 ---
 
-<Base title={title} description={description}>
+<Base title={title} description={description} jsonLd={[faqSchema]}>
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <BreadcrumbSchema items={breadcrumbs} />
 
@@ -62,19 +85,13 @@ const allZipCodes = info.zips || [];
         {info.name} ZIP Codes — Complete List
       </h1>
       <p class="text-slate-500 mt-2">
-        All {formatNumber(info.zip_count || allZipCodes.length)} ZIP codes in the state of {info.name}
+        All {formatNumber(zipCount)} ZIP codes in {info.name}
       </p>
     </div>
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-      <StatBlock
-        label="ZIP Codes"
-        value={formatNumber(info.zip_count || allZipCodes.length)}
-      />
-      <StatBlock
-        label="Cities"
-        value={formatNumber(cities.length || info.cities?.length || 0)}
-      />
+      <StatBlock label="ZIP Codes" value={formatNumber(zipCount)} />
+      <StatBlock label="Cities" value={formatNumber(cities.length || info.cities?.length || 0)} />
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -120,7 +137,9 @@ const allZipCodes = info.zips || [];
                         <td class="px-4 py-3">
                           <a href={`/zip/${z.zip}`} class="text-primary font-semibold hover:underline">{z.zip}</a>
                         </td>
-                        <td class="px-4 py-3 text-slate-700">{z.city}</td>
+                        <td class="px-4 py-3">
+                          <a href={`/city/${citySlug(z.city, z.state)}`} class="text-slate-700 hover:text-primary hover:underline">{z.city}</a>
+                        </td>
                         <td class="px-4 py-3 text-slate-500">{z.county}</td>
                       </tr>
                     ))}
@@ -132,7 +151,7 @@ const allZipCodes = info.zips || [];
             <div class="bg-white rounded-xl border border-slate-200 p-8 text-center">
               <p class="text-slate-500 text-sm">
                 ZIP code data for {info.name} will be available after the full data build.
-                This state has approximately {formatNumber(info.zip_count || allZipCodes.length)} ZIP codes.
+                This state has approximately {formatNumber(zipCount)} ZIP codes.
               </p>
               <div class="mt-4 flex flex-wrap justify-center gap-2">
                 {allZipCodes.slice(0, 20).map((z: string) => (
@@ -145,14 +164,20 @@ const allZipCodes = info.zips || [];
             </div>
           )}
         </section>
+
+        <AdSenseUnit slot="state-bottom-leaderboard" format="horizontal" />
+
+        <FAQSection faqs={faqs} />
       </div>
 
       <aside class="space-y-6">
         <StateMap state={abbr} stateFull={info.name} />
 
+        <AdSenseUnit slot="state-sidebar-rectangle" format="rectangle" />
+
         <div class="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl border border-primary/20 p-5">
           <p class="text-xs text-slate-500 leading-relaxed">
-            Data sourced from the <a href="https://www.census.gov/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">US Census Bureau</a> and <a href="https://postalpro.usps.com/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">USPS</a>.
+            Data sourced from the <a href="https://www.census.gov/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">US Census Bureau</a> and <a href="https://postalpro.usps.com/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">USPS</a>. This site is for informational purposes only.
           </p>
         </div>
       </aside>

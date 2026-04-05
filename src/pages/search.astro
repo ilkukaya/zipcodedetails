@@ -1,21 +1,32 @@
 ---
 import Base from '../layouts/Base.astro';
 import SearchBox from '../components/SearchBox.astro';
+import AdSenseUnit from '../components/AdSenseUnit.astro';
+import BreadcrumbSchema from '../components/BreadcrumbSchema.astro';
 
-const title = 'Search ZIP Codes — ZIPCodeDetails.com';
-const description = 'Search any US ZIP code by number, city, or state. Find location, geographic, and postal data for any ZIP code.';
+const title = 'Search ZIP Codes — Free US ZIP Code Lookup | ZIPCodeDetails.com';
+const description = 'Search any US ZIP code by number, city, or state. Find location, geographic, and postal data instantly.';
+
+const breadcrumbs = [
+  { name: 'Home', url: 'https://zipcodedetails.com' },
+  { name: 'Search', url: 'https://zipcodedetails.com/search' },
+];
 ---
 
 <Base title={title} description={description}>
   <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <BreadcrumbSchema items={breadcrumbs} />
+
     <div class="text-center mb-8">
       <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Search ZIP Codes</h1>
       <p class="text-slate-500">
-        Enter a ZIP code, city name, or state to find postal code details
+        Enter a ZIP code, city name, or state to find location details
       </p>
     </div>
 
     <SearchBox size="large" />
+
+    <AdSenseUnit slot="search-mid-leaderboard" format="horizontal" />
 
     <div class="mt-12">
       <h2 class="text-lg font-semibold text-slate-900 mb-4 text-center">Popular Searches</h2>

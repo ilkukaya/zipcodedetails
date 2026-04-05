@@ -1,0 +1,71 @@
+---
+import Base from '../layouts/Base.astro';
+import BreadcrumbSchema from '../components/BreadcrumbSchema.astro';
+
+const title = 'Privacy Policy — ZIPCodeDetails.com';
+const description = 'Privacy Policy for ZIPCodeDetails.com. Learn how we handle visitor data, cookies, and third-party services.';
+
+const breadcrumbs = [
+  { name: 'Home', url: 'https://zipcodedetails.com' },
+  { name: 'Privacy Policy', url: 'https://zipcodedetails.com/privacy' },
+];
+---
+
+<Base title={title} description={description}>
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <BreadcrumbSchema items={breadcrumbs} />
+
+    <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-6">Privacy Policy</h1>
+    <p class="text-sm text-slate-500 mb-8">Last updated: April 2026</p>
+
+    <div class="prose prose-slate max-w-none">
+      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Introduction</h2>
+      <p class="text-slate-600 leading-relaxed">
+        ZIPCodeDetails.com ("we", "us", or "our") operates the website
+        <a href="https://zipcodedetails.com" class="text-primary hover:underline">zipcodedetails.com</a>.
+        This page informs you of our policies regarding the collection, use, and
+        disclosure of information when you visit our site.
+      </p>
+
+      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Information We Collect</h2>
+      <p class="text-slate-600 leading-relaxed">
+        We do not collect personal information such as names, email addresses, or
+        phone numbers. We do not require user registration or accounts.
+      </p>
+
+      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Analytics</h2>
+      <p class="text-slate-600 leading-relaxed">
+        We use <a href="https://plausible.io/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">Plausible Analytics</a>,
+        a privacy-focused analytics service. Plausible does not use cookies, does not
+        collect personal data, and is fully compliant with GDPR, CCPA, and PECR.
+      </p>
+
+      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Advertising</h2>
+      <p class="text-slate-600 leading-relaxed">
+        We use Google AdSense to display advertisements. Google AdSense may use cookies
+        and web beacons to serve ads based on your prior visits. You may opt out of
+        personalized advertising by visiting
+        <a href="https://www.google.com/settings/ads" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">Google Ads Settings</a>.
+      </p>
+
+      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Cookies</h2>
+      <p class="text-slate-600 leading-relaxed">
+        Our site itself does not set cookies. However, third-party services such as
+        Google AdSense may set cookies on your browser. You can control cookie
+        settings through your browser preferences.
+      </p>
+
+      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Children's Privacy</h2>
+      <p class="text-slate-600 leading-relaxed">
+        Our site is not directed at children under the age of 13. We do not
+        knowingly collect personal information from children.
+      </p>
+
+      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Contact</h2>
+      <p class="text-slate-600 leading-relaxed">
+        If you have questions about this Privacy Policy, please contact us via our
+        <a href="https://github.com/ilkukaya/zipcodedetails" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">GitHub repository</a>.
+      </p>
+    </div>
+  </div>
+</Base>

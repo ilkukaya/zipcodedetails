@@ -1,0 +1,57 @@
+---
+import Base from '../layouts/Base.astro';
+import BreadcrumbSchema from '../components/BreadcrumbSchema.astro';
+
+const title = 'Terms of Use — ZIPCodeDetails.com';
+const description = 'Terms of Use for ZIPCodeDetails.com. Understand the terms for using our free US ZIP code reference data.';
+
+const breadcrumbs = [
+  { name: 'Home', url: 'https://zipcodedetails.com' },
+  { name: 'Terms of Use', url: 'https://zipcodedetails.com/terms' },
+];
+---
+
+<Base title={title} description={description}>
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <BreadcrumbSchema items={breadcrumbs} />
+
+    <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-6">Terms of Use</h1>
+    <p class="text-sm text-slate-500 mb-8">Last updated: April 2026</p>
+
+    <div class="prose prose-slate max-w-none">
+      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Acceptance of Terms</h2>
+      <p class="text-slate-600 leading-relaxed">
+        By accessing and using ZIPCodeDetails.com ("the Site"), you agree to be bound
+        by these Terms of Use.
+      </p>
+
+      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Purpose and Intended Use</h2>
+      <p class="text-slate-600 leading-relaxed">
+        The Site provides US ZIP code reference data for informational purposes only.
+        The data is derived from publicly available US Census Bureau and USPS datasets.
+      </p>
+
+      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Not an Official Service</h2>
+      <div class="bg-amber-50 border border-amber-200 rounded-lg p-5 mt-4">
+        <p class="text-slate-700 text-sm leading-relaxed">
+          <strong>ZIPCodeDetails.com is not affiliated with, endorsed by, or an official
+          service of the United States Postal Service (USPS) or the US Census Bureau.</strong>
+          For official services, please visit
+          <a href="https://www.usps.com/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">USPS.com</a>.
+        </p>
+      </div>
+
+      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Limitation of Liability</h2>
+      <p class="text-slate-600 leading-relaxed">
+        The Site and its content are provided "as is" without warranty of any kind.
+        We shall not be liable for any damages arising from the use of the Site or its data.
+      </p>
+
+      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Contact</h2>
+      <p class="text-slate-600 leading-relaxed">
+        If you have questions about these Terms, please contact us via our
+        <a href="https://github.com/ilkukaya/zipcodedetails" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">GitHub repository</a>.
+      </p>
+    </div>
+  </div>
+</Base>

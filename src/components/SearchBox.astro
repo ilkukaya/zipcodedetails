@@ -42,6 +42,24 @@ const inputClass = size === 'large'
     return searchData;
   }
 
+  function escapeHtml(str: string): string {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function citySlug(city: string, state: string): string {
+    return (
+      city
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-') +
+      '-' +
+      state.toLowerCase()
+    );
+  }
+
   const input = document.getElementById('zip-search-input') as HTMLInputElement;
   const results = document.getElementById('search-results') as HTMLDivElement;
 
@@ -60,30 +78,94 @@ const inputClass = size === 'large'
         const data = await loadSearchData();
         if (!data) return;
 
-        const matches = data
+        // Find matching ZIPs
+        const zipMatches = data
           .filter(
             (d) =>
               d.zip.startsWith(q) ||
               d.city.toLowerCase().includes(q) ||
               d.state.toLowerCase() === q
           )
-          .slice(0, 10);
+          .slice(0, 8);
 
-        if (matches.length === 0) {
-          results.innerHTML = '<div class="p-4 text-sm text-slate-500">No results found</div>';
+        // Deduplicate cities for city-level results
+        const cityMap = new Map<string, { city: string; state: string; count: number }>();
+        for (const d of data) {
+          if (d.city.toLowerCase().includes(q) || d.state.toLowerCase() === q) {
+            const key = `${d.city}_${d.state}`;
+            if (!cityMap.has(key)) {
+              cityMap.set(key, { city: d.city, state: d.state, count: 1 });
+            } else {
+              cityMap.get(key)!.count++;
+            }
+          }
+        }
+        const cityMatches = Array.from(cityMap.values())
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 4);
+
+        // Deduplicate states
+        const stateMap = new Map<string, { state: string; count: number }>();
+        for (const d of data) {
+          if (d.state.toLowerCase().startsWith(q)) {
+            if (!stateMap.has(d.state)) {
+              stateMap.set(d.state, { state: d.state, count: 1 });
+            } else {
+              stateMap.get(d.state)!.count++;
+            }
+          }
+        }
+        const stateMatches = Array.from(stateMap.values()).slice(0, 3);
+
+        if (zipMatches.length === 0 && cityMatches.length === 0 && stateMatches.length === 0) {
+          results.innerHTML = '<div class="p-4 text-sm text-slate-500">No results found. Try a ZIP code, city, or state name.</div>';
         } else {
-          results.innerHTML = matches
-            .map(
-              (m) =>
-                `<a href="/zip/${m.zip}" class="flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0 no-underline">
-                  <div>
-                    <span class="font-semibold text-primary">${m.zip}</span>
-                    <span class="text-sm text-slate-600 ml-2">${m.city}, ${m.state}</span>
-                  </div>
-                  <svg class="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                </a>`
-            )
-            .join('');
+          let html = '';
+
+          // State results
+          if (stateMatches.length > 0 && q.length <= 3) {
+            html += '<div class="px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider bg-slate-50">States</div>';
+            for (const s of stateMatches) {
+              html += `<a href="/state/${encodeURIComponent(s.state.toLowerCase())}" class="flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-100 no-underline">
+                <div>
+                  <span class="text-sm font-semibold text-slate-700">${escapeHtml(s.state)}</span>
+                  <span class="text-xs text-slate-400 ml-2">${s.count} ZIP codes</span>
+                </div>
+                <svg class="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </a>`;
+            }
+          }
+
+          // City results
+          if (cityMatches.length > 0 && !/^\d/.test(q)) {
+            html += '<div class="px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider bg-slate-50">Cities</div>';
+            for (const c of cityMatches) {
+              const slug = citySlug(c.city, c.state);
+              html += `<a href="/city/${encodeURIComponent(slug)}" class="flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-100 no-underline">
+                <div>
+                  <span class="text-sm font-semibold text-slate-700">${escapeHtml(c.city)}, ${escapeHtml(c.state)}</span>
+                  <span class="text-xs text-slate-400 ml-2">${c.count} ZIP codes</span>
+                </div>
+                <svg class="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </a>`;
+            }
+          }
+
+          // ZIP results
+          if (zipMatches.length > 0) {
+            html += '<div class="px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider bg-slate-50">ZIP Codes</div>';
+            for (const m of zipMatches) {
+              html += `<a href="/zip/${encodeURIComponent(m.zip)}" class="flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0 no-underline">
+                <div>
+                  <span class="font-semibold text-primary">${escapeHtml(m.zip)}</span>
+                  <span class="text-sm text-slate-600 ml-2">${escapeHtml(m.city)}, ${escapeHtml(m.state)}</span>
+                </div>
+                <svg class="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </a>`;
+            }
+          }
+
+          results.innerHTML = html;
         }
         results.classList.remove('hidden');
       }, 200);
