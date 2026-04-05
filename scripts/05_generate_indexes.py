@@ -91,7 +91,7 @@ def build_state_index(df: pd.DataFrame) -> dict:
     """
     Build a dict keyed by state abbreviation.
     Each entry:
-      name, abbreviation, zip_count, population (sum), zips (list), cities (unique list)
+      name, abbreviation, zip_count, zips (list), cities (unique list)
     """
     logger.info("Building state_index …")
     index: dict = {}
@@ -136,7 +136,7 @@ def build_state_index(df: pd.DataFrame) -> dict:
 def build_city_index(df: pd.DataFrame) -> dict:
     """
     Build a dict keyed by "City_ST".
-    Each entry: city, state, state_full, county, population (sum), zips (list)
+    Each entry: city, state, state_full, county, zips (list)
     """
     logger.info("Building city_index …")
     index: dict = {}

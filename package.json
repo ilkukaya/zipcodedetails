@@ -2,7 +2,7 @@
   "name": "zipcodedetails",
   "type": "module",
   "version": "1.0.0",
-  "description": "Comprehensive US ZIP code reference platform — demographics, location data, and more for 41,000+ ZIP codes",
+  "description": "Comprehensive US ZIP code reference platform — location and geographic data for 41,000+ US ZIP codes",
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",

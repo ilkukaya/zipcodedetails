@@ -1,12 +1,4 @@
 /**
- * Format a number as US currency (e.g., $147,832)
- */
-export function formatCurrency(value: number | null | undefined): string {
-  if (value == null || value < 0) return 'N/A';
-  return '$' + value.toLocaleString('en-US');
-}
-
-/**
  * Format a number with commas (e.g., 21,741)
  */
 export function formatNumber(value: number | null | undefined): string {

@@ -63,8 +63,8 @@ def validate_zip_files(zips_dir: Path):
     Validate every *.json file in *zips_dir*.
 
     Returns a dict with:
-      total_files, missing_fields, null_fields, no_population, no_income,
-      critical_missing (set of zip codes with critical fields absent)
+      total_files, missing_fields, null_fields,
+      critical_missing_zips (set of zip codes with critical fields absent)
     """
     zip_files = sorted(zips_dir.glob("*.json"))
     total = len(zip_files)
