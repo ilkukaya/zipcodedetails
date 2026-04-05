@@ -1,6 +1,8 @@
 [build]
-  # Build is handled by GitHub Actions — Netlify only deploys
-  command = "echo 'Deployed via GitHub Actions'"
+  # Build and deploy is handled entirely by GitHub Actions workflow.
+  # This ignore command tells Netlify to skip its own auto-builds.
+  ignore = "exit 0"
+  command = "npm run build"
   publish = "dist"
 
 [build.environment]
