@@ -26,10 +26,8 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
-      - name: Download Census Gazetteer and ACS data
+      - name: Download Census Gazetteer data
         run: python scripts/01_download_census.py
-        env:
-          CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
 
       - name: Download city/county/state mapping data
         run: python scripts/02_download_usps.py
