@@ -1,15 +1,14 @@
 # ZIPCodeDetails.com
 
-Comprehensive US ZIP code reference platform — demographics, location data, and more for 41,000+ ZIP codes.
+Comprehensive US ZIP code reference platform — location and geographic data for 41,000+ ZIP codes.
 
 ## Tech Stack
 
 - **Framework**: Astro 5.x (Static Site Generator)
 - **Styling**: Tailwind CSS 3.x
 - **Hosting**: Netlify (Free tier)
-- **Data**: US Census Bureau (ACS 5-Year Estimates + Gazetteer)
+- **Data**: US Census Bureau (Gazetteer) + USPS Postal Data
 - **Maps**: Leaflet.js (lazy loaded)
-- **Charts**: Chart.js (lazy loaded)
 - **Analytics**: Plausible (cookie-free)
 
 ## Project Structure
@@ -55,7 +54,7 @@ npm run dev
 To rebuild the data from Census Bureau sources:
 
 ```bash
-pip install requests pandas haversine pytz
+pip install -r requirements.txt
 python scripts/01_download_census.py
 python scripts/02_download_usps.py
 python scripts/03_merge_and_enrich.py
@@ -72,10 +71,9 @@ npm run build
 
 ## Data Sources
 
-- [US Census Bureau ACS 5-Year Estimates](https://www.census.gov/programs-surveys/acs)
 - [Census Gazetteer Files](https://www.census.gov/geographies/reference-files/time-series/geo/gazetteer-files.html)
-- [HUD USPS ZIP Code Crosswalk](https://www.huduser.gov/portal/datasets/usps_crosswalk.html)
+- [USPS ZIP Codes by Area and District Codes](https://postalpro.usps.com/ZIP_Locale_Detail)
 
 ## License
 
-Data is sourced from the US Census Bureau and is in the public domain.
+Data is sourced from the US Census Bureau and USPS, and is in the public domain.

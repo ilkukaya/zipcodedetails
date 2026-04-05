@@ -37,7 +37,6 @@ CITY_INDEX_PATH = DATA_DIR / "city_index.json"
 REQUIRED_FIELDS = [
     "zip", "city", "state", "state_full", "county",
     "cbsa", "cbsa_code",
-    "population", "median_household_income",
     "land_area_sqmi", "water_area_sqmi",
     "lat", "lng",
     "timezone", "dst", "zip_type", "surrounding_zips",
@@ -46,8 +45,8 @@ REQUIRED_FIELDS = [
 # Exits with code 1 if any of these are missing
 CRITICAL_FIELDS = {"zip", "state", "lat", "lng"}
 
-STATE_INDEX_REQUIRED = {"name", "abbreviation", "zip_count", "population", "zips", "cities"}
-CITY_INDEX_REQUIRED = {"city", "state", "state_full", "county", "population", "zips"}
+STATE_INDEX_REQUIRED = {"name", "abbreviation", "zip_count", "zips", "cities"}
+CITY_INDEX_REQUIRED = {"city", "state", "state_full", "county", "zips"}
 
 
 # ---------------------------------------------------------------------------
@@ -73,8 +72,6 @@ def validate_zip_files(zips_dir: Path):
 
     missing_fields: dict[str, int] = defaultdict(int)   # field → count of files missing it
     null_fields: dict[str, int] = defaultdict(int)       # field → count of files where value is null
-    no_population: list[str] = []
-    no_income: list[str] = []
     critical_missing_zips: set[str] = set()
 
     for path in zip_files:
@@ -97,22 +94,10 @@ def validate_zip_files(zips_dir: Path):
                 if field in CRITICAL_FIELDS:
                     critical_missing_zips.add(zip_id)
 
-        # Population
-        pop = record.get("population")
-        if pop is None or pop == 0:
-            no_population.append(zip_id)
-
-        # Income
-        income = record.get("median_household_income")
-        if income is None:
-            no_income.append(zip_id)
-
     return {
         "total_files": total,
         "missing_fields": dict(missing_fields),
         "null_fields": dict(null_fields),
-        "no_population": no_population,
-        "no_income": no_income,
         "critical_missing_zips": critical_missing_zips,
     }
 
@@ -215,21 +200,6 @@ def print_report(zip_results: dict, state_result: dict, city_result: dict) -> bo
             pct = count / total * 100 if total else 0
             flag = "  [CRITICAL]" if field in CRITICAL_FIELDS else ""
             print(f"  {field:<30} {count:>6} ({pct:.1f}%){flag}")
-
-    # --- No population / no income -------------------------------------------
-    no_pop = zip_results["no_population"]
-    no_inc = zip_results["no_income"]
-    print(f"\n--- ZIP codes with no population data : {len(no_pop)} ---")
-    if no_pop:
-        preview = ", ".join(no_pop[:20])
-        suffix = f"  … and {len(no_pop) - 20} more" if len(no_pop) > 20 else ""
-        print(f"  {preview}{suffix}")
-
-    print(f"\n--- ZIP codes with no income data    : {len(no_inc)} ---")
-    if no_inc:
-        preview = ", ".join(no_inc[:20])
-        suffix = f"  … and {len(no_inc) - 20} more" if len(no_inc) > 20 else ""
-        print(f"  {preview}{suffix}")
 
     # --- state_index ----------------------------------------------------------
     print_separator()

@@ -1,7 +1,7 @@
 """
 03_merge_and_enrich.py
 
-Merges the three raw data files produced by scripts 01 and 02, enriches each
+Merges the raw data files produced by scripts 01 and 02, enriches each
 record with the 5 nearest ZIPs (by Haversine distance), fills missing values
 with sensible defaults, and writes the final dataset to:
 
@@ -11,7 +11,6 @@ Columns in output (matching what script 04 expects)
 ----------------------------------------------------
 zip, city, state, state_full, county, cbsa, cbsa_code,
 lat, lng, land_area_sqmi, water_area_sqmi,
-population, median_household_income,
 timezone, dst, zip_type, surrounding_zips
 """
 
@@ -30,7 +29,6 @@ RAW_DIR = Path(__file__).resolve().parent.parent / "data" / "raw"
 PROCESSED_DIR = Path(__file__).resolve().parent.parent / "data" / "processed"
 
 GAZETTEER_CSV = RAW_DIR / "gazetteer.csv"
-ACS_CSV = RAW_DIR / "acs_data.csv"
 ZIP_MAPPING_CSV = RAW_DIR / "zip_mapping.csv"
 OUTPUT_CSV = PROCESSED_DIR / "all_zips.csv"
 
@@ -44,8 +42,6 @@ FINAL_COLUMNS = [
     "county",
     "cbsa",
     "cbsa_code",
-    "population",
-    "median_household_income",
     "land_area_sqmi",
     "water_area_sqmi",
     "lat",
@@ -166,7 +162,6 @@ def load_csv(path: Path, label: str) -> pd.DataFrame:
 
 def merge_all(
     gaz: pd.DataFrame,
-    acs: pd.DataFrame,
     mapping: pd.DataFrame,
 ) -> pd.DataFrame:
 
@@ -176,7 +171,6 @@ def merge_all(
         return df
 
     gaz = normalise_zip(gaz.copy())
-    acs = normalise_zip(acs.copy())
     mapping = normalise_zip(mapping.copy())
 
     log.info("Merging Gazetteer ← ZIP mapping …")
@@ -190,17 +184,6 @@ def merge_all(
     else:
         log.warning("ZIP mapping is empty; skipping merge.")
         merged = gaz.copy()
-
-    log.info("Merging ← ACS data …")
-    if not acs.empty:
-        acs_keep = ["zip"]
-        for col in ["population", "median_household_income"]:
-            if col in acs.columns:
-                acs_keep.append(col)
-        acs_keep = [c for c in acs_keep if c == "zip" or c not in merged.columns]
-        merged = merged.merge(acs[acs_keep], on="zip", how="left")
-    else:
-        log.warning("ACS data is empty; skipping merge.")
 
     log.info("Merged total rows: %d", len(merged))
     return merged
@@ -292,11 +275,6 @@ def fill_defaults(df: pd.DataFrame) -> pd.DataFrame:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
-    for col in ["population", "median_household_income"]:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
-            df[col] = df[col].fillna(-1).astype(int)
-
     for col in ["land_area_sqmi", "water_area_sqmi"]:
         if col in df.columns:
             df[col] = df[col].fillna(0.0)
@@ -351,7 +329,6 @@ def main() -> None:
     # --- Load ---
     log.info("=== Step 1/5: Load raw data files ===")
     gaz = load_csv(GAZETTEER_CSV, "Gazetteer")
-    acs = load_csv(ACS_CSV, "ACS data")
     mapping = load_csv(ZIP_MAPPING_CSV, "ZIP mapping")
 
     if gaz.empty:
@@ -359,7 +336,7 @@ def main() -> None:
 
     # --- Merge ---
     log.info("=== Step 2/5: Merge datasets ===")
-    merged = merge_all(gaz, acs, mapping)
+    merged = merge_all(gaz, mapping)
 
     # --- Rename and enrich ---
     log.info("=== Step 3/5: Rename columns and enrich ===")

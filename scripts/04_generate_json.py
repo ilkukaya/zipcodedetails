@@ -31,9 +31,6 @@ PROJECT_ROOT = SCRIPT_DIR.parent
 CSV_PATH = PROJECT_ROOT / "data" / "processed" / "all_zips.csv"
 OUTPUT_DIR = PROJECT_ROOT / "data" / "zips"
 
-# Fields that should be written as JSON null when the source value is NaN
-NULLABLE_FIELDS = {"population", "median_household_income"}
-
 # Fields that should fall back to 0.0 (not null) when the source value is NaN
 ZERO_FALLBACK_FIELDS = {"land_area_sqmi", "water_area_sqmi"}
 
@@ -113,8 +110,6 @@ def build_record(row: pd.Series) -> dict:
         "county": str_or_none("county"),
         "cbsa": str_or_none("cbsa"),
         "cbsa_code": str_or_none("cbsa_code"),
-        "population": nullable_int("population"),
-        "median_household_income": nullable_int("median_household_income"),
         "land_area_sqmi": zero_float("land_area_sqmi"),
         "water_area_sqmi": zero_float("water_area_sqmi"),
         "lat": nullable_float("lat"),

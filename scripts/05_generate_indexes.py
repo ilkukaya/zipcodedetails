@@ -104,14 +104,12 @@ def build_state_index(df: pd.DataFrame) -> dict:
         state_full = safe_str(row.get("state_full"), default=state)
         zip_code = safe_str(row.get("zip"))
         city = safe_str(row.get("city"))
-        pop = safe_int(row.get("population"), default=0)
 
         if state not in index:
             index[state] = {
                 "name": state_full,
                 "abbreviation": state,
                 "zip_count": 0,
-                "population": 0,
                 "zips": [],
                 "cities": [],
                 "_city_set": set(),   # removed before serialisation
@@ -119,7 +117,6 @@ def build_state_index(df: pd.DataFrame) -> dict:
 
         entry = index[state]
         entry["zip_count"] += 1
-        entry["population"] += pop
 
         if zip_code:
             entry["zips"].append(zip_code)
@@ -154,7 +151,6 @@ def build_city_index(df: pd.DataFrame) -> dict:
         state_full = safe_str(row.get("state_full"), default=state)
         county = safe_str(row.get("county"))
         zip_code = safe_str(row.get("zip"))
-        pop = safe_int(row.get("population"), default=0)
 
         if key not in index:
             index[key] = {
@@ -162,12 +158,10 @@ def build_city_index(df: pd.DataFrame) -> dict:
                 "state": state,
                 "state_full": state_full,
                 "county": county,
-                "population": 0,
                 "zips": [],
             }
 
         entry = index[key]
-        entry["population"] += pop
         if zip_code:
             entry["zips"].append(zip_code)
 
@@ -192,25 +186,52 @@ def build_search_index(df: pd.DataFrame) -> list:
     return records
 
 
+WELL_KNOWN_ZIPS = [
+    "10001", "90210", "60601", "77001", "33101", "02101", "94102",
+    "30301", "75201", "98101", "85001", "19101", "55401", "92101",
+    "80201", "97201", "37201", "28201", "73101", "84101", "89101",
+    "32801", "40201", "96801", "87101", "23219", "48201", "43215",
+    "46201", "53201", "64101", "63101", "27601", "29401", "35203",
+    "38103", "20001", "21201", "02901", "06101", "01101", "19801",
+    "50301", "57101", "58501", "59601", "82001", "99501", "96801",
+    "00901",
+]
+
+
 def build_popular_zips(df: pd.DataFrame, top_n: int = 100) -> list:
     """
-    Return the top *top_n* ZIP codes ranked by population descending.
-    Each record has: zip, city, state, population.
+    Return a curated list of well-known ZIP codes.
+    Each record has: zip, city, state.
     """
     logger.info("Building popular_zips (top %d) …", top_n)
 
-    pop_df = df[["zip", "city", "state", "population"]].copy()
-    pop_df["population"] = pd.to_numeric(pop_df["population"], errors="coerce").fillna(0).astype(int)
-    pop_df = pop_df.sort_values("population", ascending=False).head(top_n)
-
+    zip_set = set(df["zip"].values)
     records = []
-    for _, row in pop_df.iterrows():
-        records.append({
-            "zip": safe_str(row["zip"]),
-            "city": safe_str(row["city"]),
-            "state": safe_str(row["state"]),
-            "population": int(row["population"]),
-        })
+
+    # First add well-known ZIPs
+    for z in WELL_KNOWN_ZIPS:
+        if z in zip_set and len(records) < top_n:
+            row = df[df["zip"] == z].iloc[0]
+            records.append({
+                "zip": safe_str(row["zip"]),
+                "city": safe_str(row["city"]),
+                "state": safe_str(row["state"]),
+            })
+
+    # Fill remaining slots from the dataset
+    if len(records) < top_n:
+        used = {r["zip"] for r in records}
+        for _, row in df.head(top_n * 2).iterrows():
+            z = safe_str(row["zip"])
+            if z and z not in used:
+                records.append({
+                    "zip": z,
+                    "city": safe_str(row["city"]),
+                    "state": safe_str(row["state"]),
+                })
+                used.add(z)
+                if len(records) >= top_n:
+                    break
 
     logger.info("popular_zips built — %d entries", len(records))
     return records
