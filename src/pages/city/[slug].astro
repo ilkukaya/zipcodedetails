@@ -7,6 +7,7 @@ import ZipCard from '../../components/ZipCard.astro';
 import StatBlock from '../../components/StatBlock.astro';
 import AdSenseUnit from '../../components/AdSenseUnit.astro';
 import FAQSection from '../../components/FAQSection.astro';
+import SponsorBlock from '../../components/SponsorBlock.astro';
 import { formatNumber, citySlug } from '../../lib/formatters';
 import { cityPageTitle, cityPageDescription } from '../../lib/seo';
 
@@ -137,6 +138,8 @@ const faqSchema = {
     </section>
 
     <AdSenseUnit slot="city-bottom-leaderboard" format="horizontal" />
+
+    <SponsorBlock city={info.city} state={info.state} stateFull={stateFull} />
 
     <FAQSection faqs={faqs} />
 

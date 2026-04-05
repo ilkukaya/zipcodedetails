@@ -17,7 +17,6 @@ export const GET: APIRoute = () => {
     { loc: '/guides/what-is-a-zip-code', priority: '0.7', changefreq: 'yearly' },
     { loc: '/guides/zip-code-vs-postal-code', priority: '0.7', changefreq: 'yearly' },
     { loc: '/guides/us-zip-code-format', priority: '0.7', changefreq: 'yearly' },
-    { loc: '/api', priority: '0.6', changefreq: 'monthly' },
   ];
 
   // Top pages for each state

@@ -8,6 +8,7 @@ import MiniMap from '../../components/MiniMap.astro';
 import NearbyZips from '../../components/NearbyZips.astro';
 import FAQSection from '../../components/FAQSection.astro';
 import AdSenseUnit from '../../components/AdSenseUnit.astro';
+import SponsorBlock from '../../components/SponsorBlock.astro';
 import { formatArea, formatCoordinates, getTimezoneAbbr, getTimezoneName, citySlug } from '../../lib/formatters';
 import { zipPageTitle, zipPageDescription } from '../../lib/seo';
 
@@ -230,6 +231,8 @@ const tzName = getTimezoneName(data.timezone);
             </a>
           </div>
         </section>
+
+        <SponsorBlock city={data.city} state={data.state} stateFull={data.state_full} />
 
         <FAQSection faqs={faqs} />
       </div>
