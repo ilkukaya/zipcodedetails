@@ -52,16 +52,30 @@ const allZipCodes = info.zips || [];
 const zipCount = info.zip_count || allZipCodes.length;
 
 // FAQ for state page
+const firstZip = allZipCodes[0] || '';
+const lastZip = allZipCodes[allZipCodes.length - 1] || '';
 const faqs = [
   {
     question: `How many ZIP codes are in ${info.name}?`,
-    answer: `There are ${formatNumber(zipCount)} ZIP code tabulation areas in ${info.name}, based on US Census Bureau data.`,
+    answer: `There are ${formatNumber(zipCount)} ZIP code tabulation areas in ${info.name}, based on US Census Bureau data. ZIP codes in ${info.name} range from ${firstZip} to ${lastZip}.`,
   },
   {
     question: `What cities are in ${info.name}?`,
     answer: cities.length > 0
       ? `${info.name} has ZIP codes across ${formatNumber(cities.length)} cities and places. Some of the major cities include ${topCities.slice(0, 5).join(', ')}.`
       : `City data for ${info.name} will be available after the full data build.`,
+  },
+  {
+    question: `What is the ZIP code for ${info.name}?`,
+    answer: `${info.name} has ${formatNumber(zipCount)} different ZIP codes. There is no single ZIP code for the entire state. Use the search box or table above to find the specific ZIP code for any city or location in ${info.name}.`,
+  },
+  {
+    question: `What are the most common ZIP codes in ${info.name}?`,
+    answer: `All ${formatNumber(zipCount)} ZIP codes in ${info.name} are listed in the table above. You can search by city name to find specific ZIP codes, or browse the full list sorted by ZIP code number.`,
+  },
+  {
+    question: `How do I find a ZIP code in ${info.name}?`,
+    answer: `You can find any ZIP code in ${info.name} by searching for a city name in the search box above, or by browsing the complete list of ${formatNumber(zipCount)} ZIP codes in the table. Each ZIP code links to a detailed page with location, county, and time zone information.`,
   },
 ];
 

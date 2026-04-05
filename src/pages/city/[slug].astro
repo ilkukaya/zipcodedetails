@@ -50,16 +50,31 @@ for (const z of (info.zips || [])) {
 }
 
 // FAQ for city page
+const zipsList = zipCount > 0 ? info.zips.slice(0, 10).join(', ') : '';
 const faqs = [
   {
-    question: `How many ZIP codes are in ${info.city}, ${info.state}?`,
-    answer: `There are ${zipCount} ZIP code${zipCount !== 1 ? 's' : ''} in ${info.city}, ${stateFull}.${zipCount > 0 ? ` These include: ${info.zips.slice(0, 10).join(', ')}${zipCount > 10 ? `, and ${zipCount - 10} more` : ''}.` : ''}`,
+    question: `What is the ZIP code for ${info.city}, ${info.state}?`,
+    answer: zipCount === 1
+      ? `The ZIP code for ${info.city}, ${stateFull} is ${info.zips[0]}.`
+      : `${info.city}, ${stateFull} has ${zipCount} ZIP codes: ${zipsList}${zipCount > 10 ? `, and ${zipCount - 10} more` : ''}.`,
+  },
+  {
+    question: `How many ZIP codes does ${info.city}, ${info.state} have?`,
+    answer: `${info.city}, ${stateFull} is served by ${zipCount} ZIP code${zipCount !== 1 ? 's' : ''}. All ZIP codes are listed on this page with their location details.`,
   },
   {
     question: `What county is ${info.city}, ${info.state} in?`,
     answer: info.county
       ? `${info.city}, ${stateFull} is located in ${info.county}.`
       : `County information for ${info.city} is not currently available.`,
+  },
+  {
+    question: `What state is ${info.city} in?`,
+    answer: `${info.city} is located in the state of ${stateFull} (${info.state}).`,
+  },
+  {
+    question: `Is ${info.city}, ${info.state} a good place to live?`,
+    answer: `This site provides ZIP code and geographic data for ${info.city}, ${stateFull}. For information about quality of life, cost of living, schools, and other community details, we recommend visiting local community resources and real estate websites for the ${info.city} area.`,
   },
 ];
 

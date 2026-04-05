@@ -37,24 +37,52 @@ const breadcrumbs = [
   { name: `ZIP ${data.zip}`, url: `${siteUrl}/zip/${data.zip}` },
 ];
 
+const nearbyList = data.surrounding_zips && data.surrounding_zips.length > 0
+  ? data.surrounding_zips.slice(0, 5).join(', ')
+  : null;
+
 const faqs = [
   {
     question: `What city is ZIP code ${data.zip} in?`,
     answer: `ZIP code ${data.zip} is located in ${data.city}, ${data.state_full}. It is part of ${data.county}, ${data.state_full}.`,
   },
   {
+    question: `What state is ZIP code ${data.zip} in?`,
+    answer: `ZIP code ${data.zip} is in the state of ${data.state_full} (${data.state}).`,
+  },
+  {
     question: `What county is ${data.zip} in?`,
     answer: `ZIP code ${data.zip} is in ${data.county}, ${data.state_full}.`,
   },
   {
-    question: `What time zone is ZIP ${data.zip}?`,
-    answer: `ZIP code ${data.zip} is in the ${getTimezoneName(data.timezone)} zone (${data.timezone}).${data.dst ? ' Daylight Saving Time is observed.' : ' Daylight Saving Time is NOT observed.'}`,
+    question: `What time zone is ${data.zip}?`,
+    answer: `ZIP code ${data.zip} is in the ${getTimezoneName(data.timezone)} zone (${data.timezone}).${data.dst ? ' Daylight Saving Time is observed in this area.' : ' Daylight Saving Time is NOT observed in this area.'}`,
   },
   {
-    question: `What are the nearby ZIP codes to ${data.zip}?`,
-    answer: data.surrounding_zips && data.surrounding_zips.length > 0
-      ? `The nearest ZIP codes to ${data.zip} include ${data.surrounding_zips.slice(0, 5).join(', ')}. These are calculated based on geographic distance between ZIP code area centroids.`
-      : `Nearby ZIP code data is not available for ${data.zip}.`,
+    question: `Where is ${data.zip} located?`,
+    answer: `ZIP code ${data.zip} is located in ${data.city}, ${data.county}, ${data.state_full}. Its geographic center is approximately at coordinates ${data.lat?.toFixed(4)}°N, ${Math.abs(data.lng)?.toFixed(4)}°W. The area covers ${data.land_area_sqmi ? data.land_area_sqmi.toFixed(2) + ' square miles' : 'an unspecified area'} of land.`,
+  },
+  {
+    question: `Is ${data.zip} a safe area?`,
+    answer: `This site provides geographic and location data for ZIP code ${data.zip} in ${data.city}, ${data.state_full}. For safety and crime statistics, we recommend checking local law enforcement resources or community safety databases for the ${data.city} area.`,
+  },
+  {
+    question: `What are the ZIP codes near ${data.zip}?`,
+    answer: nearbyList
+      ? `The nearest ZIP codes to ${data.zip} include ${nearbyList}. These are the closest ZIP code areas by geographic distance from the center of ${data.zip}.`
+      : `Nearby ZIP code data is not currently available for ${data.zip}.`,
+  },
+  {
+    question: `What is the area code for ${data.zip}?`,
+    answer: `ZIP codes and telephone area codes are different systems. ZIP code ${data.zip} is in ${data.city}, ${data.state_full}. To find the telephone area code for this location, check with your local phone service provider or search for "${data.city}, ${data.state} area code."`,
+  },
+  {
+    question: `How far is ${data.city} from the nearest major city?`,
+    answer: `ZIP code ${data.zip} is located in ${data.city}, ${data.state_full}${data.cbsa ? `, which is part of the ${data.cbsa} metropolitan area` : ''}. For exact driving distances, we recommend using a maps application.`,
+  },
+  {
+    question: `Can I use ${data.zip} for mailing?`,
+    answer: `${data.zip} is a valid US ZIP code assigned to ${data.city}, ${data.state_full}. However, for official address validation and mailing purposes, always verify your complete address (including street, city, state, and ZIP+4 code) through USPS.com or your local post office.`,
   },
 ];
 
