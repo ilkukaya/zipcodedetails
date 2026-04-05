@@ -1,7 +1,9 @@
 [build]
-  # Build and deploy handled by GitHub Actions — skip Netlify auto-builds
+  # ALL builds and deploys are handled by GitHub Actions.
+  # Netlify should NEVER build on its own — it would deploy with empty data.
+  # The ignore command exits 0 to cancel any auto-triggered builds.
   ignore = "exit 0"
-  command = "npm run build"
+  command = "echo 'This site is deployed via GitHub Actions only' && exit 0"
   publish = "dist"
 
 [build.environment]
