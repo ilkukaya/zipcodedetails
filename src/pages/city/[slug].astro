@@ -6,7 +6,7 @@ import BreadcrumbSchema from '../../components/BreadcrumbSchema.astro';
 import ZipCard from '../../components/ZipCard.astro';
 import StatBlock from '../../components/StatBlock.astro';
 import AdSenseUnit from '../../components/AdSenseUnit.astro';
-import { formatNumber, formatCurrency, citySlug } from '../../lib/formatters';
+import { formatNumber, citySlug } from '../../lib/formatters';
 import { cityPageTitle, cityPageDescription } from '../../lib/seo';
 
 export function getStaticPaths() {
@@ -47,9 +47,6 @@ for (const z of (info.zips || [])) {
   } catch { /* skip */ }
 }
 
-const totalPop = cityZips.reduce((s, z) => s + (z.population || 0), 0) || info.population || 0;
-const incomes = cityZips.filter((z) => z.median_household_income != null && z.median_household_income > 0).map((z) => z.median_household_income);
-const avgIncome = incomes.length > 0 ? Math.round(incomes.reduce((a: number, b: number) => a + b, 0) / incomes.length) : null;
 ---
 
 <Base title={title} description={description}>
@@ -71,15 +68,6 @@ const avgIncome = incomes.length > 0 ? Math.round(incomes.reduce((a: number, b: 
         value={formatNumber(info.zips?.length || 0)}
       />
       <StatBlock
-        label="Population"
-        value={formatNumber(totalPop)}
-      />
-      <StatBlock
-        label="Avg. Income"
-        value={avgIncome ? formatCurrency(avgIncome) : 'N/A'}
-        accent={true}
-      />
-      <StatBlock
         label="County"
         value={info.county || 'N/A'}
       />
@@ -99,8 +87,6 @@ const avgIncome = incomes.length > 0 ? Math.round(incomes.reduce((a: number, b: 
               zip={z.zip}
               city={z.city}
               state={z.state}
-              population={z.population}
-              income={z.median_household_income}
               county={z.county}
             />
           ))}

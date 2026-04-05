@@ -13,8 +13,6 @@ interface ZipInfo {
   zip: string;
   city: string;
   state: string;
-  population: number | null;
-  median_household_income: number | null;
   county: string;
 }
 
@@ -29,8 +27,6 @@ for (const z of zips) {
         zip: data.zip,
         city: data.city,
         state: data.state,
-        population: data.population,
-        median_household_income: data.median_household_income,
         county: data.county,
       });
     }
@@ -49,8 +45,6 @@ for (const z of zips) {
           zip={z.zip}
           city={z.city}
           state={z.state}
-          population={z.population}
-          income={z.median_household_income}
           county={z.county}
         />
       ))}

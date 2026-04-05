@@ -1,13 +1,9 @@
-import { formatNumber, formatCurrency } from './formatters';
-
 export interface ZipData {
   zip: string;
   city: string;
   state: string;
   state_full: string;
   county: string;
-  population: number | null;
-  median_household_income: number | null;
   timezone: string;
 }
 
@@ -16,23 +12,15 @@ export function zipPageTitle(data: ZipData): string {
 }
 
 export function zipPageDescription(data: ZipData): string {
-  const parts = [`Complete details for ZIP code ${data.zip} in ${data.city}, ${data.state_full}.`];
-  if (data.population != null) {
-    parts.push(`Population: ${formatNumber(data.population)}`);
-  }
-  if (data.median_household_income != null) {
-    parts.push(`Median Income: ${formatCurrency(data.median_household_income)}`);
-  }
-  parts.push(`County: ${data.county}`);
-  return parts.join(' | ');
+  return `Complete details for ZIP code ${data.zip} in ${data.city}, ${data.state_full}. County: ${data.county}. Location, time zone, and geographic data.`;
 }
 
 export function statePageTitle(stateFull: string, stateAbbr: string, count: number): string {
-  return `${stateFull} ZIP Codes — All ${formatNumber(count)} ZIP Codes in ${stateAbbr}`;
+  return `${stateFull} ZIP Codes — All ${count.toLocaleString()} ZIP Codes in ${stateAbbr}`;
 }
 
 export function statePageDescription(stateFull: string, count: number): string {
-  return `Browse all ${formatNumber(count)} ZIP codes in ${stateFull}. Find demographics, population, income data, and more for every ZIP code in the state.`;
+  return `Browse all ${count.toLocaleString()} ZIP codes in ${stateFull}. Find location, county, time zone, and geographic data for every ZIP code in the state.`;
 }
 
 export function cityPageTitle(city: string, state: string): string {
@@ -40,5 +28,5 @@ export function cityPageTitle(city: string, state: string): string {
 }
 
 export function cityPageDescription(city: string, stateFull: string, count: number): string {
-  return `Find all ${count} ZIP code${count !== 1 ? 's' : ''} for ${city}, ${stateFull}. View demographics, population, income, and location data.`;
+  return `Find all ${count} ZIP code${count !== 1 ? 's' : ''} for ${city}, ${stateFull}. View location, county, time zone, and geographic data.`;
 }
