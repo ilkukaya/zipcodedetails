@@ -7,9 +7,10 @@ import BreadcrumbSchema from '../components/BreadcrumbSchema.astro';
 const title = 'Search ZIP Codes — Free US ZIP Code Lookup | ZIPCodeDetails.com';
 const description = 'Search any US ZIP code by number, city, or state. Find location, geographic, and postal data instantly.';
 
+const siteUrl = Astro.site?.origin || 'https://zipcodedetails.netlify.app';
 const breadcrumbs = [
-  { name: 'Home', url: 'https://zipcodedetails.netlify.app' },
-  { name: 'Search', url: 'https://zipcodedetails.netlify.app/search' },
+  { name: 'Home', url: siteUrl },
+  { name: 'Search', url: `${siteUrl}/search` },
 ];
 ---
 

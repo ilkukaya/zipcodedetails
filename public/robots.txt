@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://zipcodedetails.com/sitemap-index.xml
+Sitemap: https://zipcodedetails.netlify.app/sitemap-index.xml

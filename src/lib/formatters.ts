@@ -39,7 +39,7 @@ export function getTimezoneAbbr(tz: string): string {
     'America/Indiana/Indianapolis': 'ET',
     'America/Kentucky/Louisville': 'ET',
     'America/North_Dakota/Center': 'CT',
-    'America/Adak': 'HST',
+    'America/Adak': 'HAST',
   };
   return map[tz] || tz.split('/').pop()?.replace(/_/g, ' ') || tz;
 }

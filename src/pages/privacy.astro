@@ -5,9 +5,10 @@ import BreadcrumbSchema from '../components/BreadcrumbSchema.astro';
 const title = 'Privacy Policy — ZIPCodeDetails.com';
 const description = 'Privacy Policy for ZIPCodeDetails.com. Learn how we handle visitor data, cookies, and third-party services.';
 
+const siteUrl = Astro.site?.origin || 'https://zipcodedetails.netlify.app';
 const breadcrumbs = [
-  { name: 'Home', url: 'https://zipcodedetails.netlify.app' },
-  { name: 'Privacy Policy', url: 'https://zipcodedetails.netlify.app/privacy' },
+  { name: 'Home', url: siteUrl },
+  { name: 'Privacy Policy', url: `${siteUrl}/privacy` },
 ];
 ---
 
@@ -35,7 +36,7 @@ const breadcrumbs = [
 
       <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Analytics</h2>
       <p class="text-slate-600 leading-relaxed">
-        We use <a href="https://plausible.io/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">Plausible Analytics</a>,
+        We use <a href="https://plausible.io/" rel="nofollow noopener noreferrer" target="_blank" class="text-primary hover:underline">Plausible Analytics</a>,
         a privacy-focused analytics service. Plausible does not use cookies, does not
         collect personal data, and is fully compliant with GDPR, CCPA, and PECR.
       </p>
@@ -45,7 +46,7 @@ const breadcrumbs = [
         We use Google AdSense to display advertisements. Google AdSense may use cookies
         and web beacons to serve ads based on your prior visits. You may opt out of
         personalized advertising by visiting
-        <a href="https://www.google.com/settings/ads" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">Google Ads Settings</a>.
+        <a href="https://www.google.com/settings/ads" rel="nofollow noopener noreferrer" target="_blank" class="text-primary hover:underline">Google Ads Settings</a>.
       </p>
 
       <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Cookies</h2>
@@ -64,7 +65,7 @@ const breadcrumbs = [
       <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Contact</h2>
       <p class="text-slate-600 leading-relaxed">
         If you have questions about this Privacy Policy, please contact us via our
-        <a href="https://github.com/ilkukaya/zipcodedetails" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">GitHub repository</a>.
+        <a href="https://github.com/ilkukaya/zipcodedetails" rel="nofollow noopener noreferrer" target="_blank" class="text-primary hover:underline">GitHub repository</a>.
       </p>
     </div>
   </div>

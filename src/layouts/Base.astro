@@ -23,8 +23,10 @@ const canonicalUrl = canonical || new URL(Astro.url.pathname, Astro.site).href;
     <title>{title}</title>
     <link rel="canonical" href={canonicalUrl} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <meta name="theme-color" content="#1d4ed8" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap"
       rel="stylesheet"
@@ -54,16 +56,21 @@ const canonicalUrl = canonical || new URL(Astro.url.pathname, Astro.site).href;
       data-domain="zipcodedetails.netlify.app"
       src="https://plausible.io/js/script.js"
     ></script>
-    <!-- Google AdSense -->
+    <!-- Google AdSense — replace ca-pub-XXXXXXXXXXXXXXXX with your real publisher ID to enable -->
+    <!--
     <script
       async
       src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
       crossorigin="anonymous"
     ></script>
+    -->
   </head>
   <body class="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans antialiased">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-semibold">
+      Skip to main content
+    </a>
     <Header />
-    <main class="flex-1">
+    <main id="main-content" class="flex-1">
       <slot />
     </main>
     <Footer />

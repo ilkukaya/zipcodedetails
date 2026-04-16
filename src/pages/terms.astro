@@ -5,9 +5,10 @@ import BreadcrumbSchema from '../components/BreadcrumbSchema.astro';
 const title = 'Terms of Use — ZIPCodeDetails.com';
 const description = 'Terms of Use for ZIPCodeDetails.com. Understand the terms for using our free US ZIP code reference data.';
 
+const siteUrl = Astro.site?.origin || 'https://zipcodedetails.netlify.app';
 const breadcrumbs = [
-  { name: 'Home', url: 'https://zipcodedetails.netlify.app' },
-  { name: 'Terms of Use', url: 'https://zipcodedetails.netlify.app/terms' },
+  { name: 'Home', url: siteUrl },
+  { name: 'Terms of Use', url: `${siteUrl}/terms` },
 ];
 ---
 
@@ -37,7 +38,7 @@ const breadcrumbs = [
           <strong>ZIPCodeDetails.com is not affiliated with, endorsed by, or an official
           service of the United States Postal Service (USPS) or the US Census Bureau.</strong>
           For official services, please visit
-          <a href="https://www.usps.com/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">USPS.com</a>.
+          <a href="https://www.usps.com/" rel="nofollow noopener noreferrer" target="_blank" class="text-primary hover:underline">USPS.com</a>.
         </p>
       </div>
 
@@ -50,7 +51,7 @@ const breadcrumbs = [
       <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Contact</h2>
       <p class="text-slate-600 leading-relaxed">
         If you have questions about these Terms, please contact us via our
-        <a href="https://github.com/ilkukaya/zipcodedetails" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">GitHub repository</a>.
+        <a href="https://github.com/ilkukaya/zipcodedetails" rel="nofollow noopener noreferrer" target="_blank" class="text-primary hover:underline">GitHub repository</a>.
       </p>
     </div>
   </div>

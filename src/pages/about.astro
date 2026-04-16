@@ -5,9 +5,10 @@ import BreadcrumbSchema from '../components/BreadcrumbSchema.astro';
 const title = 'About — ZIPCodeDetails.com | Free US ZIP Code Reference';
 const description = 'Learn about ZIPCodeDetails.com — a free US ZIP code reference platform powered by US Census Bureau and USPS data.';
 
+const siteUrl = Astro.site?.origin || 'https://zipcodedetails.netlify.app';
 const breadcrumbs = [
-  { name: 'Home', url: 'https://zipcodedetails.netlify.app' },
-  { name: 'About', url: 'https://zipcodedetails.netlify.app/about' },
+  { name: 'Home', url: siteUrl },
+  { name: 'About', url: `${siteUrl}/about` },
 ];
 ---
 
@@ -38,8 +39,8 @@ const breadcrumbs = [
         All data on this site is derived from publicly available datasets:
       </p>
       <ul class="list-disc list-inside text-slate-600 space-y-2 mt-4">
-        <li><strong>Geographic coordinates and land/water area</strong> from <a href="https://www.census.gov/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">US Census Bureau</a> Gazetteer files</li>
-        <li><strong>City, state, and county mapping</strong> from Census relationship files and <a href="https://postalpro.usps.com/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">USPS</a> postal data</li>
+        <li><strong>Geographic coordinates and land/water area</strong> from <a href="https://www.census.gov/" rel="nofollow noopener noreferrer" target="_blank" class="text-primary hover:underline">US Census Bureau</a> Gazetteer files</li>
+        <li><strong>City, state, and county mapping</strong> from Census relationship files and <a href="https://postalpro.usps.com/" rel="nofollow noopener noreferrer" target="_blank" class="text-primary hover:underline">USPS</a> postal data</li>
         <li><strong>Time zone data</strong> derived from geographic coordinates</li>
         <li><strong>CBSA (metropolitan area) designations</strong> from Census metropolitan delineation files</li>
       </ul>
@@ -64,7 +65,7 @@ const breadcrumbs = [
           </li>
           <li>
             For official address verification, please visit
-            <a href="https://www.usps.com/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">USPS.com</a>
+            <a href="https://www.usps.com/" rel="nofollow noopener noreferrer" target="_blank" class="text-primary hover:underline">USPS.com</a>
             or contact your local post office.
           </li>
         </ul>
@@ -80,7 +81,7 @@ const breadcrumbs = [
       <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Contact</h2>
       <p class="text-slate-600 leading-relaxed">
         If you have questions, corrections, or feedback, please reach out via our
-        <a href="https://github.com/ilkukaya/zipcodedetails" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">GitHub repository</a>.
+        <a href="https://github.com/ilkukaya/zipcodedetails" rel="nofollow noopener noreferrer" target="_blank" class="text-primary hover:underline">GitHub repository</a>.
       </p>
     </div>
   </div>

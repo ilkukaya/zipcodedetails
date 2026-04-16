@@ -172,7 +172,47 @@ const inputClass = size === 'large'
     });
 
     input.addEventListener('keydown', (e: KeyboardEvent) => {
+      const links = results.querySelectorAll('a');
+      const active = results.querySelector('a.bg-primary\\/5') as HTMLAnchorElement | null;
+
+      if (e.key === 'Escape') {
+        results.classList.add('hidden');
+        input.blur();
+        return;
+      }
+
+      if (e.key === 'ArrowDown' && links.length > 0) {
+        e.preventDefault();
+        if (!active) {
+          links[0].classList.add('bg-primary/5');
+        } else {
+          active.classList.remove('bg-primary/5');
+          const idx = Array.from(links).indexOf(active);
+          const next = links[(idx + 1) % links.length];
+          next.classList.add('bg-primary/5');
+        }
+        return;
+      }
+
+      if (e.key === 'ArrowUp' && links.length > 0) {
+        e.preventDefault();
+        if (!active) {
+          links[links.length - 1].classList.add('bg-primary/5');
+        } else {
+          active.classList.remove('bg-primary/5');
+          const idx = Array.from(links).indexOf(active);
+          const prev = links[(idx - 1 + links.length) % links.length];
+          prev.classList.add('bg-primary/5');
+        }
+        return;
+      }
+
       if (e.key === 'Enter') {
+        if (active) {
+          e.preventDefault();
+          window.location.href = active.getAttribute('href') || '';
+          return;
+        }
         const q = input.value.trim();
         if (/^\d{5}$/.test(q)) {
           window.location.href = `/zip/${q}`;

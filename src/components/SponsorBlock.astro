@@ -17,7 +17,7 @@ const { city, state, stateFull } = Astro.props;
         <h3 class="text-sm font-semibold text-slate-800">Moving Services</h3>
       </div>
       <p class="text-xs text-slate-500 mb-3">Compare quotes from top-rated movers in the {city} area.</p>
-      <a href={`https://www.google.com/search?q=moving+companies+${encodeURIComponent(city)}+${encodeURIComponent(state)}`} target="_blank" rel="nofollow noopener sponsored" class="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+      <a href={`https://www.google.com/search?q=moving+companies+${encodeURIComponent(city)}+${encodeURIComponent(state)}`} target="_blank" rel="nofollow noopener noreferrer sponsored" class="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
         Find Movers
         <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
       </a>
@@ -28,7 +28,7 @@ const { city, state, stateFull } = Astro.props;
         <h3 class="text-sm font-semibold text-slate-800">Real Estate</h3>
       </div>
       <p class="text-xs text-slate-500 mb-3">Browse homes for sale and rentals in {city}, {stateFull}.</p>
-      <a href={`https://www.google.com/search?q=homes+for+sale+${encodeURIComponent(city)}+${encodeURIComponent(state)}`} target="_blank" rel="nofollow noopener sponsored" class="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+      <a href={`https://www.google.com/search?q=homes+for+sale+${encodeURIComponent(city)}+${encodeURIComponent(state)}`} target="_blank" rel="nofollow noopener noreferrer sponsored" class="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
         Search Homes
         <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
       </a>
@@ -39,7 +39,7 @@ const { city, state, stateFull } = Astro.props;
         <h3 class="text-sm font-semibold text-slate-800">Home Insurance</h3>
       </div>
       <p class="text-xs text-slate-500 mb-3">Compare home insurance rates for the {city} area.</p>
-      <a href={`https://www.google.com/search?q=home+insurance+${encodeURIComponent(city)}+${encodeURIComponent(state)}`} target="_blank" rel="nofollow noopener sponsored" class="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+      <a href={`https://www.google.com/search?q=home+insurance+${encodeURIComponent(city)}+${encodeURIComponent(state)}`} target="_blank" rel="nofollow noopener noreferrer sponsored" class="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
         Get Quotes
         <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
       </a>
