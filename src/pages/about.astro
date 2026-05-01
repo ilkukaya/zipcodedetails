@@ -5,9 +5,10 @@ import BreadcrumbSchema from '../components/BreadcrumbSchema.astro';
 const title = 'About — ZIPCodeDetails.com | Free US ZIP Code Reference';
 const description = 'Learn about ZIPCodeDetails.com — a free US ZIP code reference platform powered by US Census Bureau and USPS data.';
 
+const siteUrl = Astro.site?.origin || 'https://zipcodedetails.netlify.app';
 const breadcrumbs = [
-  { name: 'Home', url: 'https://zipcodedetails.netlify.app' },
-  { name: 'About', url: 'https://zipcodedetails.netlify.app/about' },
+  { name: 'Home', url: siteUrl },
+  { name: 'About', url: `${siteUrl}/about` },
 ];
 ---
 

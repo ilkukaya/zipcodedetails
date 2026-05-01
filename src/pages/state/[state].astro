@@ -88,9 +88,21 @@ const faqSchema = {
     acceptedAnswer: { '@type': 'Answer', text: f.answer },
   })),
 };
+
+const adminAreaSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'State',
+  name: info.name,
+  containedInPlace: {
+    '@type': 'Country',
+    name: 'United States',
+    sameAs: 'https://www.wikidata.org/wiki/Q30',
+  },
+  url: `${siteUrl}/state/${abbr.toLowerCase()}`,
+};
 ---
 
-<Base title={title} description={description} jsonLd={[faqSchema]}>
+<Base title={title} description={description} jsonLd={[faqSchema, adminAreaSchema]}>
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <BreadcrumbSchema items={breadcrumbs} />
 

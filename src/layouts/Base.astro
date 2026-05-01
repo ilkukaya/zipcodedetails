@@ -11,7 +11,10 @@ interface Props {
 }
 
 const { title, description, canonical, ogImage, jsonLd } = Astro.props;
+const siteUrl = Astro.site?.origin || 'https://zipcodedetails.netlify.app';
 const canonicalUrl = canonical || new URL(Astro.url.pathname, Astro.site).href;
+const ogImageUrl = ogImage || `${siteUrl}/og-default.png`;
+const plausibleDomain = new URL(siteUrl).hostname;
 ---
 
 <!doctype html>
@@ -35,11 +38,14 @@ const canonicalUrl = canonical || new URL(Astro.url.pathname, Astro.site).href;
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:site_name" content="ZIPCodeDetails.com" />
-    {ogImage && <meta property="og:image" content={ogImage} />}
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <!-- Twitter -->
-    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
     <!-- Structured Data -->
     {jsonLd && (
       Array.isArray(jsonLd)
@@ -51,9 +57,10 @@ const canonicalUrl = canonical || new URL(Astro.url.pathname, Astro.site).href;
     <!-- Analytics -->
     <script
       defer
-      data-domain="zipcodedetails.netlify.app"
+      data-domain={plausibleDomain}
       src="https://plausible.io/js/script.js"
     ></script>
+    <link rel="preconnect" href="https://plausible.io" />
     <!-- Google AdSense -->
     <script
       async

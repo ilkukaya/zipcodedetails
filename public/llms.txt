@@ -1,0 +1,31 @@
+# ZIPCodeDetails
+
+> Free reference site for all 39,398 US ZIP codes. Data sourced from US Census Bureau
+> and USPS public datasets. For each ZIP, we provide city, county, state, time zone,
+> coordinates, demographics (population, median income, median home value, housing units),
+> and nearby ZIP codes with distances.
+
+## What this site covers
+- 39,398 ZIP codes (STANDARD + PO BOX)
+- 29,747 cities
+- 3,239 counties
+- 59 states and US territories
+
+## Key page types
+- /zip/[code] — full detail page for a single ZIP code
+- /city/[slug] — all ZIP codes in a given city
+- /county/[slug] — all ZIP codes in a given county
+- /state/[code] — all ZIP codes in a given state
+
+## Sitemap
+[Full sitemap](https://zipcodedetails.netlify.app/sitemap-index.xml)
+
+## Data sources
+- US Census Bureau Gazetteer: https://www.census.gov/geographies/reference-files/time-series/geo/gazetteer-files.html
+- USPS Postal Data (federal public records)
+
+## Limitations
+- This is unofficial reference data; for official address validation use USPS.com
+- ZIP boundaries are based on ZCTAs which approximate USPS routes but don't match exactly
+- UNIQUE-type ZIPs (e.g., government agencies, large corporations) and MILITARY ZIPs are not
+  included as they have negligible search demand
