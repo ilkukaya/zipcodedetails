@@ -1,0 +1,45 @@
+---
+import Base from '../layouts/Base.astro';
+import SearchBox from '../components/SearchBox.astro';
+
+const title = 'Page Not Found — ZIPCodeDetails.com';
+const description = 'The ZIP code or page you are looking for could not be found. Search for any US ZIP code to find location and geographic details.';
+---
+
+<Base title={title} description={description}>
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+    <div class="mb-8">
+      <p class="text-8xl font-black text-primary/20 tabular-nums">404</p>
+      <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 mt-4 mb-3">
+        Page Not Found
+      </h1>
+      <p class="text-slate-500 text-base">
+        The ZIP code or page you are looking for doesn't exist or may have been removed.
+      </p>
+    </div>
+
+    <div class="mb-10">
+      <p class="text-sm font-medium text-slate-700 mb-3">Search for a ZIP code:</p>
+      <SearchBox size="large" />
+    </div>
+
+    <div class="border-t border-slate-200 pt-8">
+      <p class="text-sm text-slate-500 mb-4">Or browse by location:</p>
+      <div class="flex flex-wrap justify-center gap-3 text-sm">
+        <a href="/" class="text-primary hover:underline font-medium">Home</a>
+        <span class="text-slate-300">·</span>
+        <a href="/state/ca" class="text-primary hover:underline font-medium">California</a>
+        <span class="text-slate-300">·</span>
+        <a href="/state/tx" class="text-primary hover:underline font-medium">Texas</a>
+        <span class="text-slate-300">·</span>
+        <a href="/state/ny" class="text-primary hover:underline font-medium">New York</a>
+        <span class="text-slate-300">·</span>
+        <a href="/state/fl" class="text-primary hover:underline font-medium">Florida</a>
+        <span class="text-slate-300">·</span>
+        <a href="/zip/90210" class="text-primary hover:underline font-medium">90210</a>
+        <span class="text-slate-300">·</span>
+        <a href="/zip/10001" class="text-primary hover:underline font-medium">10001</a>
+      </div>
+    </div>
+  </div>
+</Base>

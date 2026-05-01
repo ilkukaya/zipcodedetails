@@ -154,7 +154,7 @@ const faqSchema = {
   })),
 };
 
-const placeSchema = {
+const placeSchema: Record<string, unknown> = {
   '@context': 'https://schema.org',
   '@type': 'Place',
   name: `ZIP Code ${data.zip} — ${data.city}, ${data.state}`,
@@ -165,11 +165,20 @@ const placeSchema = {
     addressRegion: data.state,
     addressCountry: 'US',
   },
-  geo: {
-    '@type': 'GeoCoordinates',
-    latitude: data.lat,
-    longitude: data.lng,
-  },
+  ...(data.lat != null && data.lng != null ? {
+    geo: {
+      '@type': 'GeoCoordinates',
+      latitude: data.lat,
+      longitude: data.lng,
+    },
+  } : {}),
+  ...(data.county ? {
+    containedInPlace: {
+      '@type': 'AdministrativeArea',
+      name: data.county,
+      ...(data.county_slug ? { url: `${siteUrl}/county/${data.county_slug}` } : {}),
+    },
+  } : {}),
 };
 ---
 

@@ -88,9 +88,21 @@ const faqSchema = {
     acceptedAnswer: { '@type': 'Answer', text: f.answer },
   })),
 };
+
+const placeSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'City',
+  name: `${info.city}, ${stateFull}`,
+  containedInPlace: {
+    '@type': 'State',
+    name: stateFull,
+    url: `${siteUrl}/state/${info.state.toLowerCase()}`,
+  },
+  url: `${siteUrl}/city/${citySlug(info.city, info.state)}`,
+};
 ---
 
-<Base title={title} description={description} jsonLd={[faqSchema]}>
+<Base title={title} description={description} jsonLd={[faqSchema, placeSchema]}>
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <BreadcrumbSchema items={breadcrumbs} />
 

@@ -87,15 +87,17 @@ const faqSchema = {
   })),
 };
 
+const siteOrigin = Astro.site?.origin || 'https://zipcodedetails.netlify.app';
+
 const websiteSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
   name: 'ZIPCodeDetails.com',
-  url: 'https://zipcodedetails.netlify.app',
+  url: siteOrigin,
   description: 'Free US ZIP code lookup with location and geographic data.',
   potentialAction: {
     '@type': 'SearchAction',
-    target: 'https://zipcodedetails.netlify.app/search?q={search_term_string}',
+    target: `${siteOrigin}/search?q={search_term_string}`,
     'query-input': 'required name=search_term_string',
   },
 };
@@ -104,8 +106,8 @@ const orgSchema = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
   name: 'ZIPCodeDetails.com',
-  url: 'https://zipcodedetails.netlify.app',
-  logo: 'https://zipcodedetails.netlify.app/favicon.svg',
+  url: siteOrigin,
+  logo: `${siteOrigin}/favicon.svg`,
   description: 'Free US ZIP code lookup and reference data.',
 };
 

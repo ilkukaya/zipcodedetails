@@ -83,9 +83,21 @@ const faqSchema = {
     acceptedAnswer: { '@type': 'Answer', text: f.answer },
   })),
 };
+
+const adminAreaSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'AdministrativeArea',
+  name: info.county,
+  containedInPlace: {
+    '@type': 'State',
+    name: info.state_full,
+    url: `${siteUrl}/state/${info.state.toLowerCase()}`,
+  },
+  url: `${siteUrl}/county/${slug}`,
+};
 ---
 
-<Base title={title} description={description} jsonLd={[faqSchema]}>
+<Base title={title} description={description} jsonLd={[faqSchema, adminAreaSchema]}>
   <link rel="canonical" href={`${siteUrl}/county/${slug}`} slot="head" />
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <BreadcrumbSchema items={breadcrumbs} />
