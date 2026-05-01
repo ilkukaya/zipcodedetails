@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "prebuild": "python3 scripts/00_bootstrap_data.py || python scripts/00_bootstrap_data.py || true",
+    "prebuild": "python3 scripts/build_data.py || python scripts/build_data.py || python3 scripts/00_bootstrap_data.py || true",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro"

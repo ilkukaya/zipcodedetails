@@ -27,34 +27,34 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
-      - name: Download Census Gazetteer data
-        run: python scripts/01_download_census.py
+      - name: Download raw data from GitHub Release
+        run: |
+          mkdir -p data/raw
+          # NOTE: Set DATA_RELEASE_URL secret to the GitHub Release asset URL
+          # for pseo_zipcodes_full.json (or a .rar archive of it).
+          if [ -n "${{ secrets.DATA_RELEASE_URL }}" ]; then
+            echo "Downloading data from release..."
+            curl -fsSL "${{ secrets.DATA_RELEASE_URL }}" -o data/raw/pseo_zipcodes_full.json
+            echo "Downloaded $(wc -c < data/raw/pseo_zipcodes_full.json) bytes"
+          else
+            echo "WARNING: DATA_RELEASE_URL secret not set. Skipping download."
+            echo "The build will fail unless data/raw/pseo_zipcodes_full.json already exists."
+          fi
 
-      - name: Download city/county/state mapping data
-        run: python scripts/02_download_usps.py
-
-      - name: Merge and enrich data
-        run: python scripts/03_merge_and_enrich.py
-
-      - name: Generate individual ZIP JSON files
-        run: python scripts/04_generate_json.py
-
-      - name: Generate index files
-        run: python scripts/05_generate_indexes.py
-
-      - name: Validate generated data
-        run: python scripts/06_validate.py
+      - name: Run data pipeline
+        run: python3 scripts/build_data.py
 
       - name: Verify data files
         run: |
           ZIP_COUNT=$(ls data/zips/*.json 2>/dev/null | wc -l)
           echo "Generated $ZIP_COUNT ZIP JSON files"
-          if [ "$ZIP_COUNT" -lt 100 ]; then
-            echo "ERROR: Expected 30000+ ZIP files but only found $ZIP_COUNT"
+          if [ "$ZIP_COUNT" -lt 35000 ]; then
+            echo "ERROR: Expected 35000+ ZIP files but only found $ZIP_COUNT"
             exit 1
           fi
           echo "state_index.json: $(wc -c < data/state_index.json) bytes"
-          echo "city_index.json: $(wc -c < data/city_index.json) bytes"
+          echo "city_index.json:  $(wc -c < data/city_index.json) bytes"
+          echo "county_index.json: $(wc -c < data/county_index.json) bytes"
 
       # ── Node.js build ─────────────────────────────────────────
       - uses: actions/setup-node@v4
@@ -78,6 +78,9 @@ jobs:
           fi
           PAGE_COUNT=$(find dist -name "*.html" | wc -l)
           echo "Built $PAGE_COUNT HTML pages in dist/"
+          if [ "$PAGE_COUNT" -lt 35000 ]; then
+            echo "WARNING: Expected 35000+ pages but found $PAGE_COUNT"
+          fi
 
       # ── Deploy to Netlify ─────────────────────────────────────
       - name: Install Netlify CLI

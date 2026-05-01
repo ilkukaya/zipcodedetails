@@ -19,6 +19,7 @@ export const GET: APIRoute = () => {
 
   sitemaps += `  <sitemap><loc>${SITE}/sitemap-states.xml</loc></sitemap>\n`;
   sitemaps += `  <sitemap><loc>${SITE}/sitemap-cities.xml</loc></sitemap>\n`;
+  sitemaps += `  <sitemap><loc>${SITE}/sitemap-counties.xml</loc></sitemap>\n`;
   sitemaps += `  <sitemap><loc>${SITE}/sitemap-pages.xml</loc></sitemap>\n`;
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>

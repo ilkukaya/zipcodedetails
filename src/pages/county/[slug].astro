@@ -1,0 +1,196 @@
+---
+import fs from 'node:fs';
+import path from 'node:path';
+import Base from '../../layouts/Base.astro';
+import BreadcrumbSchema from '../../components/BreadcrumbSchema.astro';
+import StatBlock from '../../components/StatBlock.astro';
+import AdSenseUnit from '../../components/AdSenseUnit.astro';
+import FAQSection from '../../components/FAQSection.astro';
+import { formatNumber, citySlug } from '../../lib/formatters';
+import { countyPageTitle, countyPageDescription } from '../../lib/seo';
+
+export function getStaticPaths() {
+  const countyIndex = JSON.parse(
+    fs.readFileSync(path.join(process.cwd(), 'data', 'county_index.json'), 'utf-8')
+  );
+  return Object.entries(countyIndex).map(([slug, info]: [string, any]) => ({
+    params: { slug },
+    props: { slug, info },
+  }));
+}
+
+const { slug, info } = Astro.props;
+const siteUrl = Astro.site?.origin || 'https://zipcodedetails.netlify.app';
+
+const title = countyPageTitle(info.county, info.state, info.zip_count);
+const description = countyPageDescription(info.county, info.state_full, info.zip_count);
+
+const breadcrumbs = [
+  { name: 'Home', url: siteUrl },
+  { name: info.state_full, url: `${siteUrl}/state/${info.state.toLowerCase()}` },
+  { name: info.county, url: `${siteUrl}/county/${slug}` },
+];
+
+// Load ZIP data for this county
+const zipsDir = path.join(process.cwd(), 'data', 'zips');
+const countyZips: any[] = [];
+for (const z of (info.zips || [])) {
+  const fp = path.join(zipsDir, `${z}.json`);
+  try {
+    if (fs.existsSync(fp)) {
+      countyZips.push(JSON.parse(fs.readFileSync(fp, 'utf-8')));
+    }
+  } catch { /* skip */ }
+}
+
+// Get unique cities in this county
+const citySet = new Set(countyZips.map((z) => z.city));
+const cities = [...citySet].sort();
+
+const zipCount = info.zip_count || info.zips?.length || 0;
+const firstZip = info.zips?.[0] || '';
+const lastZip = info.zips?.[info.zips.length - 1] || '';
+
+const faqs = [
+  {
+    question: `How many ZIP codes are in ${info.county}?`,
+    answer: `${info.county}, ${info.state_full} has ${zipCount} ZIP code${zipCount !== 1 ? 's' : ''}. They are listed in the table on this page.`,
+  },
+  {
+    question: `What cities are in ${info.county}?`,
+    answer: cities.length > 0
+      ? `${info.county} includes ${cities.length} city or place${cities.length !== 1 ? 's' : ''}, such as ${cities.slice(0, 5).join(', ')}${cities.length > 5 ? `, and ${cities.length - 5} more` : ''}.`
+      : `City data for ${info.county} will be available shortly.`,
+  },
+  {
+    question: `What state is ${info.county} in?`,
+    answer: `${info.county} is located in ${info.state_full} (${info.state}).`,
+  },
+  {
+    question: `What are the ZIP codes in ${info.county}, ${info.state}?`,
+    answer: zipCount > 0
+      ? `The ZIP codes in ${info.county} range from ${firstZip} to ${lastZip}. All ${zipCount} ZIP codes are listed in the table on this page.`
+      : `ZIP code data for ${info.county} is being compiled.`,
+  },
+];
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.question,
+    acceptedAnswer: { '@type': 'Answer', text: f.answer },
+  })),
+};
+---
+
+<Base title={title} description={description} jsonLd={[faqSchema]}>
+  <link rel="canonical" href={`${siteUrl}/county/${slug}`} slot="head" />
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <BreadcrumbSchema items={breadcrumbs} />
+
+    <div class="mb-8">
+      <h1 class="text-3xl sm:text-4xl font-bold text-slate-900">
+        {info.county}, {info.state} ZIP Codes
+      </h1>
+      <p class="text-slate-500 mt-2">
+        All ZIP codes in <a href={`/state/${info.state.toLowerCase()}`} class="text-primary hover:underline">{info.county}, {info.state_full}</a>
+      </p>
+    </div>
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <StatBlock label="ZIP Codes" value={formatNumber(zipCount)} />
+      <StatBlock label="Cities" value={formatNumber(cities.length)} />
+      <StatBlock label="State" value={info.state_full} />
+    </div>
+
+    <AdSenseUnit slot="county-top-leaderboard" format="horizontal" />
+
+    {cities.length > 0 && (
+      <section class="mt-8 mb-8">
+        <h2 class="text-xl font-semibold text-slate-900 mb-4">Cities in {info.county}</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          {cities.map((city: string) => (
+            <a
+              href={`/city/${citySlug(city, info.state)}`}
+              class="bg-white rounded-lg border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 hover:text-primary hover:border-primary/30 hover:shadow-sm transition-all no-underline"
+            >
+              {city}
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <section class="mt-8">
+      <h2 class="text-xl font-semibold text-slate-900 mb-4">
+        All {formatNumber(zipCount)} ZIP Codes in {info.county}
+      </h2>
+
+      {countyZips.length > 0 ? (
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200">
+                  <th class="text-left px-4 py-3 font-semibold text-slate-700">ZIP</th>
+                  <th class="text-left px-4 py-3 font-semibold text-slate-700">City</th>
+                  <th class="text-left px-4 py-3 font-semibold text-slate-700">Type</th>
+                  <th class="text-left px-4 py-3 font-semibold text-slate-700">Population</th>
+                </tr>
+              </thead>
+              <tbody>
+                {countyZips.sort((a, b) => a.zip.localeCompare(b.zip)).map((z) => (
+                  <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                    <td class="px-4 py-3">
+                      <a href={`/zip/${z.zip}`} class="text-primary font-semibold hover:underline">{z.zip}</a>
+                    </td>
+                    <td class="px-4 py-3">
+                      <a href={`/city/${citySlug(z.city, z.state)}`} class="text-slate-700 hover:text-primary hover:underline">{z.city}</a>
+                    </td>
+                    <td class="px-4 py-3 text-slate-500">{z.zip_type === 'PO BOX' ? 'PO Box' : 'Standard'}</td>
+                    <td class="px-4 py-3 text-slate-500">{z.population ? formatNumber(z.population) : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <div class="bg-white rounded-xl border border-slate-200 p-8 text-center">
+          <p class="text-slate-500 text-sm mb-4">
+            ZIP code data for {info.county} is loading. This county has approximately {formatNumber(zipCount)} ZIP codes.
+          </p>
+          <div class="flex flex-wrap justify-center gap-2">
+            {(info.zips || []).slice(0, 30).map((z: string) => (
+              <a href={`/zip/${z}`} class="text-primary text-sm font-medium hover:underline">{z}</a>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+
+    <AdSenseUnit slot="county-bottom-leaderboard" format="horizontal" />
+
+    <FAQSection faqs={faqs} />
+
+    <div class="mt-8 text-center">
+      <a
+        href={`/state/${info.state.toLowerCase()}`}
+        class="inline-flex items-center gap-2 text-primary font-medium text-sm hover:underline"
+      >
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        View all ZIP codes in {info.state_full}
+      </a>
+    </div>
+
+    <div class="mt-12 text-center">
+      <p class="text-xs text-slate-400">
+        Data sourced from <a href="https://www.census.gov/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">US Census Bureau</a> and <a href="https://postalpro.usps.com/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">USPS</a>. This site is for informational purposes only.
+      </p>
+    </div>
+  </div>
+</Base>

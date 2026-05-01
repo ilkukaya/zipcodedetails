@@ -86,6 +86,11 @@
   to = "/city/:slug"
   status = 301
 
+[[redirects]]
+  from = "/county/:slug/"
+  to = "/county/:slug"
+  status = 301
+
 # Sitemap redirect
 [[redirects]]
   from = "/sitemap.xml"

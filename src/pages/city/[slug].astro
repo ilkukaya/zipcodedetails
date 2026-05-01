@@ -8,7 +8,7 @@ import StatBlock from '../../components/StatBlock.astro';
 import AdSenseUnit from '../../components/AdSenseUnit.astro';
 import FAQSection from '../../components/FAQSection.astro';
 import SponsorBlock from '../../components/SponsorBlock.astro';
-import { formatNumber, citySlug } from '../../lib/formatters';
+import { formatNumber, citySlug, countySlug } from '../../lib/formatters';
 import { cityPageTitle, cityPageDescription } from '../../lib/seo';
 
 export function getStaticPaths() {
@@ -107,6 +107,18 @@ const faqSchema = {
       <StatBlock label="ZIP Codes" value={formatNumber(zipCount)} />
       <StatBlock label="County" value={info.county || 'N/A'} />
     </div>
+
+    {info.county && (
+      <div class="mb-6">
+        <a
+          href={`/county/${countySlug(info.county, info.state)}`}
+          class="inline-flex items-center gap-1.5 text-sm text-primary hover:underline font-medium"
+        >
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          View all ZIP codes in {info.county}
+        </a>
+      </div>
+    )}
 
     <AdSenseUnit slot="city-top-leaderboard" format="horizontal" />
 

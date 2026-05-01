@@ -8,7 +8,7 @@ import StatBlock from '../../components/StatBlock.astro';
 import AdSenseUnit from '../../components/AdSenseUnit.astro';
 import FAQSection from '../../components/FAQSection.astro';
 import StateMap from '../../components/StateMap.astro';
-import { formatNumber, citySlug } from '../../lib/formatters';
+import { formatNumber, citySlug, countySlug } from '../../lib/formatters';
 import { statePageTitle, statePageDescription } from '../../lib/seo';
 
 export function getStaticPaths() {
@@ -154,7 +154,12 @@ const faqSchema = {
                         <td class="px-4 py-3">
                           <a href={`/city/${citySlug(z.city, z.state)}`} class="text-slate-700 hover:text-primary hover:underline">{z.city}</a>
                         </td>
-                        <td class="px-4 py-3 text-slate-500">{z.county}</td>
+                        <td class="px-4 py-3 text-slate-500">
+                          {z.county_slug
+                            ? <a href={`/county/${z.county_slug}`} class="hover:text-primary hover:underline">{z.county}</a>
+                            : z.county
+                          }
+                        </td>
                       </tr>
                     ))}
                   </tbody>

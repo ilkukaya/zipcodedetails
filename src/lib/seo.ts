@@ -30,3 +30,11 @@ export function cityPageTitle(city: string, state: string): string {
 export function cityPageDescription(city: string, stateFull: string, count: number): string {
   return `Find all ${count} ZIP code${count !== 1 ? 's' : ''} for ${city}, ${stateFull}. View location, county, time zone, and geographic data for each ZIP code.`;
 }
+
+export function countyPageTitle(county: string, state: string, count: number): string {
+  return `${county}, ${state} ZIP Codes — All ${count.toLocaleString()} ZIP Codes | ZIPCodeDetails.com`;
+}
+
+export function countyPageDescription(county: string, stateFull: string, count: number): string {
+  return `Browse all ${count.toLocaleString()} ZIP codes in ${county}, ${stateFull}. View city, time zone, and geographic data for every ZIP code in ${county}.`;
+}
