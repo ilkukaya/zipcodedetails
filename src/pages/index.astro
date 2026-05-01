@@ -8,27 +8,29 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { citySlug } from '../lib/formatters';
 
-const stateIndex = JSON.parse(
-  fs.readFileSync(path.join(process.cwd(), 'data', 'state_index.json'), 'utf-8')
-);
+function safeReadJson(filePath: string): any {
+  try {
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) return parsed;
+  } catch { /* empty placeholder */ }
+  return {};
+}
 
-const cityIndex = JSON.parse(
-  fs.readFileSync(path.join(process.cwd(), 'data', 'city_index.json'), 'utf-8')
-);
+const stateIndex = safeReadJson(path.join(process.cwd(), 'data', 'state_index.json'));
+const cityIndex = safeReadJson(path.join(process.cwd(), 'data', 'city_index.json'));
+const countyIndex = safeReadJson(path.join(process.cwd(), 'data', 'county_index.json'));
+const popularZips = safeReadJson(path.join(process.cwd(), 'data', 'popular_zips.json')) as any[];
 
-const popularZips = JSON.parse(
-  fs.readFileSync(path.join(process.cwd(), 'data', 'popular_zips.json'), 'utf-8')
-);
-
-// Filter out Carrier Annex, PO Box, Station, Branch, Retail etc. from featured
 const excludePatterns = /\b(annex|carrier|station|branch|retail|po box|p\.o\. box|drawer|unit|lobby|terminal|airport)\b/i;
-const cleanZips = popularZips.filter((z: any) => !excludePatterns.test(z.city || ''));
+const popularZipsArr = Array.isArray(popularZips) ? popularZips : [];
+const cleanZips = popularZipsArr.filter((z: any) => !excludePatterns.test(z.city || ''));
 const featuredZips = cleanZips.slice(0, 12);
 
 const totalZips = Object.values(stateIndex).reduce((sum: number, s: any) => sum + (s.zip_count || 0), 0);
 const totalStates = Object.keys(stateIndex).length;
+const totalCounties = Object.keys(countyIndex).length;
 
-// Build popular cities list from city index (top 20 by zip count)
 const allCities = Object.values(cityIndex) as any[];
 const popularCities = allCities
   .filter((c: any) => c.city && c.state && (c.zips?.length || 0) > 0)
@@ -157,7 +159,7 @@ const stateEntries = Object.entries(stateIndex).sort((a: any, b: any) => a[1].na
           <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mt-1">States & Territories</p>
         </div>
         <div>
-          <p class="text-2xl font-black text-primary tabular-nums">3,143</p>
+          <p class="text-2xl font-black text-primary tabular-nums">{totalCounties > 0 ? totalCounties.toLocaleString() : '3,239'}</p>
           <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mt-1">Counties</p>
         </div>
         <div>

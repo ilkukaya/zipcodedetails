@@ -23,6 +23,8 @@ const plausibleDomain = new URL(siteUrl).hostname;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
+    <meta name="robots" content="index, follow" />
+    <meta name="author" content="ZIPCodeDetails.com" />
     <title>{title}</title>
     <link rel="canonical" href={canonicalUrl} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -33,6 +35,7 @@ const plausibleDomain = new URL(siteUrl).hostname;
       rel="stylesheet"
     />
     <!-- Open Graph -->
+    <meta property="og:locale" content="en_US" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />

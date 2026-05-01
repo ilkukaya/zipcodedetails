@@ -29,9 +29,20 @@ const faqSchema = {
     acceptedAnswer: { '@type': 'Answer', text: f.answer },
   })),
 };
+
+const articleSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: title,
+  description,
+  url: `${siteUrl}/guides/how-to-find-your-zip-code`,
+  isPartOf: { '@type': 'WebSite', url: siteUrl },
+  author: { '@type': 'Organization', name: 'ZIPCodeDetails.com' },
+  publisher: { '@type': 'Organization', name: 'ZIPCodeDetails.com', url: siteUrl },
+};
 ---
 
-<Base title={title} description={description} jsonLd={[faqSchema]}>
+<Base title={title} description={description} jsonLd={[faqSchema, articleSchema]}>
   <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <BreadcrumbSchema items={breadcrumbs} />
 

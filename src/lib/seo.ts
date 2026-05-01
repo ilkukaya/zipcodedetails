@@ -5,14 +5,30 @@ export interface ZipData {
   state_full: string;
   county: string;
   timezone: string;
+  population?: number | null;
+  median_household_income?: number | null;
+  surrounding_zips?: unknown[];
 }
 
 export function zipPageTitle(data: ZipData): string {
-  return `ZIP Code ${data.zip} — ${data.city}, ${data.state_full} | ZIPCodeDetails.com`;
+  return `ZIP Code ${data.zip} — ${data.city}, ${data.state} | ZIPCodeDetails.com`;
 }
 
 export function zipPageDescription(data: ZipData): string {
-  return `ZIP code ${data.zip} is in ${data.city}, ${data.state_full} (${data.county}). View location, time zone, coordinates, and nearby ZIP codes.`;
+  const parts: string[] = [];
+  if (data.population) parts.push(`Population ${data.population.toLocaleString('en-US')}`);
+  if (data.median_household_income) {
+    parts.push(`median income $${data.median_household_income.toLocaleString('en-US')}`);
+  }
+  const nearbyCount = Array.isArray(data.surrounding_zips)
+    ? Math.min(data.surrounding_zips.length, 8)
+    : 0;
+  const nearbyStr = nearbyCount > 0 ? `, and ${nearbyCount} nearby ZIP codes` : '';
+  const locationStr = `${data.city}, ${data.state} (${data.county})`;
+  if (parts.length > 0) {
+    return `${parts.join(', ')} in ${locationStr}. View time zone, coordinates${nearbyStr}.`;
+  }
+  return `ZIP code ${data.zip} is in ${locationStr}. View location, time zone, coordinates${nearbyStr}.`;
 }
 
 export function statePageTitle(stateFull: string, stateAbbr: string, count: number): string {

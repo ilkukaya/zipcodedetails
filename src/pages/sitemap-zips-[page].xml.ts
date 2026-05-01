@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { APIRoute, GetStaticPaths } from 'astro';
 
-const SITE = 'https://zipcodedetails.netlify.app';
+const SITE = (process.env.SITE_URL || 'https://zipcodedetails.netlify.app').replace(/\/$/, '');
 const ZIPS_PER_SITEMAP = 10000;
 
 export const getStaticPaths: GetStaticPaths = () => {

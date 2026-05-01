@@ -3,7 +3,7 @@ import path from 'node:path';
 import type { APIRoute } from 'astro';
 import { citySlug } from '../lib/formatters';
 
-const SITE = 'https://zipcodedetails.netlify.app';
+const SITE = (process.env.SITE_URL || 'https://zipcodedetails.netlify.app').replace(/\/$/, '');
 
 export const GET: APIRoute = () => {
   const cityIndex = JSON.parse(

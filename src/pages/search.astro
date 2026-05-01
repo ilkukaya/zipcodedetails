@@ -7,13 +7,23 @@ import BreadcrumbSchema from '../components/BreadcrumbSchema.astro';
 const title = 'Search ZIP Codes — Free US ZIP Code Lookup | ZIPCodeDetails.com';
 const description = 'Search any US ZIP code by number, city, or state. Find location, geographic, and postal data instantly.';
 
+const siteUrl = Astro.site?.origin || 'https://zipcodedetails.netlify.app';
 const breadcrumbs = [
-  { name: 'Home', url: 'https://zipcodedetails.netlify.app' },
-  { name: 'Search', url: 'https://zipcodedetails.netlify.app/search' },
+  { name: 'Home', url: siteUrl },
+  { name: 'Search', url: `${siteUrl}/search` },
 ];
+
+const webPageSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: title,
+  description,
+  url: `${siteUrl}/search`,
+  isPartOf: { '@type': 'WebSite', url: siteUrl },
+};
 ---
 
-<Base title={title} description={description}>
+<Base title={title} description={description} jsonLd={[webPageSchema]}>
   <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <BreadcrumbSchema items={breadcrumbs} />
 

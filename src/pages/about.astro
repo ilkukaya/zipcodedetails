@@ -10,9 +10,18 @@ const breadcrumbs = [
   { name: 'Home', url: siteUrl },
   { name: 'About', url: `${siteUrl}/about` },
 ];
+
+const webPageSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'AboutPage',
+  name: title,
+  description,
+  url: `${siteUrl}/about`,
+  isPartOf: { '@type': 'WebSite', url: siteUrl },
+};
 ---
 
-<Base title={title} description={description}>
+<Base title={title} description={description} jsonLd={[webPageSchema]}>
   <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <BreadcrumbSchema items={breadcrumbs} />
 

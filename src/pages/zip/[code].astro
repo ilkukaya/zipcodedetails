@@ -183,7 +183,6 @@ const placeSchema: Record<string, unknown> = {
 ---
 
 <Base title={title} description={description} jsonLd={[faqSchema, placeSchema]}>
-  <link rel="canonical" href={`${siteUrl}/zip/${data.zip}`} slot="head" />
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <BreadcrumbSchema items={breadcrumbs} />
 

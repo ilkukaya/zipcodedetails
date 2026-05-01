@@ -40,11 +40,13 @@ const { lat, lng, zip, city } = Astro.props;
 
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    link.href = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css';
+    link.crossOrigin = 'anonymous';
     document.head.appendChild(link);
 
     const script = document.createElement('script');
-    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.src = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js';
+    script.crossOrigin = 'anonymous';
     script.onload = () => {
       const placeholder = document.getElementById('map-placeholder');
       if (placeholder) placeholder.remove();

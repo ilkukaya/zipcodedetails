@@ -30,9 +30,20 @@ const faqSchema = {
     acceptedAnswer: { '@type': 'Answer', text: f.answer },
   })),
 };
+
+const articleSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: title,
+  description,
+  url: `${siteUrl}/guides/what-is-a-zip-code`,
+  isPartOf: { '@type': 'WebSite', url: siteUrl },
+  author: { '@type': 'Organization', name: 'ZIPCodeDetails.com' },
+  publisher: { '@type': 'Organization', name: 'ZIPCodeDetails.com', url: siteUrl },
+};
 ---
 
-<Base title={title} description={description} jsonLd={[faqSchema]}>
+<Base title={title} description={description} jsonLd={[faqSchema, articleSchema]}>
   <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <BreadcrumbSchema items={breadcrumbs} />
 
@@ -89,7 +100,7 @@ const faqSchema = {
 
       <h2 class="text-2xl font-semibold text-slate-900 mt-10 mb-4">ZIP Codes by the Numbers</h2>
       <ul class="list-disc list-inside text-slate-600 space-y-2">
-        <li>There are approximately <strong>33,000+</strong> active ZIP code tabulation areas in the US.</li>
+        <li>There are approximately <strong>39,000+</strong> active ZIP code tabulation areas in the US (Standard + PO Box types).</li>
         <li>The lowest ZIP code is <strong>00501</strong> (Holtsville, NY — IRS processing center).</li>
         <li>The highest ZIP code is <strong>99950</strong> (Ketchikan, Alaska).</li>
         <li>New York City has over <strong>200</strong> ZIP codes.</li>
