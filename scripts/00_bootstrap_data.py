@@ -41,6 +41,7 @@ def main() -> None:
 
     ensure_file(DATA_DIR / "state_index.json", "{}")
     ensure_file(DATA_DIR / "city_index.json", "{}")
+    ensure_file(DATA_DIR / "county_index.json", "{}")
     ensure_file(DATA_DIR / "search_index.json", "[]")
     ensure_file(DATA_DIR / "popular_zips.json", "[]")
     ensure_file(PUBLIC_DIR / "search_index.json", "[]")

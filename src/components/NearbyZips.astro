@@ -3,8 +3,13 @@ import ZipCard from './ZipCard.astro';
 import fs from 'node:fs';
 import path from 'node:path';
 
+interface NearbyEntry {
+  zip: string;
+  distance_mi?: number;
+}
+
 interface Props {
-  zips: string[];
+  zips: NearbyEntry[];
 }
 
 const { zips } = Astro.props;
@@ -14,11 +19,14 @@ interface ZipInfo {
   city: string;
   state: string;
   county: string;
+  distance_mi?: number;
 }
 
 const nearbyData: ZipInfo[] = [];
-for (const z of zips) {
-  const filePath = path.join(process.cwd(), 'data', 'zips', `${z}.json`);
+for (const entry of zips) {
+  const zipCode = typeof entry === 'string' ? entry : entry.zip;
+  const distanceMi = typeof entry === 'string' ? undefined : entry.distance_mi;
+  const filePath = path.join(process.cwd(), 'data', 'zips', `${zipCode}.json`);
   try {
     if (fs.existsSync(filePath)) {
       const raw = fs.readFileSync(filePath, 'utf-8');
@@ -28,25 +36,30 @@ for (const z of zips) {
         city: data.city,
         state: data.state,
         county: data.county,
+        distance_mi: distanceMi,
       });
     }
   } catch {
-    // Skip if file doesn't exist
+    // Skip missing files
   }
 }
 ---
 
 {nearbyData.length > 0 && (
-  <section class="mt-10">
+  <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
     <h2 class="text-xl font-semibold text-slate-900 mb-4">Nearby ZIP Codes</h2>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3">
       {nearbyData.map((z) => (
-        <ZipCard
-          zip={z.zip}
-          city={z.city}
-          state={z.state}
-          county={z.county}
-        />
+        <a href={`/zip/${z.zip}`} class="flex items-center justify-between bg-slate-50 rounded-lg border border-slate-200 px-4 py-3 hover:border-primary/30 hover:shadow-sm transition-all no-underline group">
+          <div>
+            <span class="text-base font-bold text-primary group-hover:text-primary-dark">{z.zip}</span>
+            <span class="text-sm text-slate-600 ml-2">{z.city}, {z.state}</span>
+            {z.county && <p class="text-xs text-slate-400 mt-0.5">{z.county}</p>}
+          </div>
+          {z.distance_mi !== undefined && (
+            <span class="text-xs font-medium text-slate-400 ml-2 shrink-0">{z.distance_mi} mi</span>
+          )}
+        </a>
       ))}
     </div>
   </section>

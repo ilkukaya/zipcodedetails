@@ -79,6 +79,21 @@ export function citySlug(city: string, state: string): string {
 }
 
 /**
+ * Slugify a county+state combo for URL (e.g., "Los Angeles County" + "CA" → "los-angeles-county-ca")
+ */
+export function countySlug(county: string, state: string): string {
+  return (
+    county
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-') +
+    '-' +
+    state.toLowerCase()
+  );
+}
+
+/**
  * Reverse a city slug back to display name
  */
 export function slugToCity(slug: string): { city: string; state: string } {
