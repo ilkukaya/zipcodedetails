@@ -1,0 +1,95 @@
+---
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import FAQ from '../../components/FAQ.astro';
+import AdSlot from '../../components/AdSlot.astro';
+import RankTable from '../../components/RankTable.astro';
+import { getRankings, getMeta, getStates } from '../../lib/data';
+import { RANKING_PAGES, type RankingPage } from '../../lib/rankings';
+import { formatNumber, formatMoney, formatArea, listJoin } from '../../lib/formatters';
+import { webPageSchema, clampDescription } from '../../lib/seo';
+import { abs, zipUrl, topUrl } from '../../lib/url';
+
+export function getStaticPaths() {
+  return RANKING_PAGES.map((p) => ({ params: { slug: p.slug }, props: { page: p } }));
+}
+const { page } = Astro.props as { page: RankingPage };
+const meta = getMeta();
+const rows = getRankings().national[page.key] || [];
+const path = `/rankings/${page.slug}/`;
+const top3 = rows.slice(0, 3);
+const val = (r: (typeof rows)[number]) =>
+  page.key === 'income' ? formatMoney(r.median_household_income)
+  : page.key === 'home_value' ? formatMoney(r.median_home_value)
+  : page.key === 'population' ? `${formatNumber(r.population)} residents`
+  : page.key === 'density' ? `${formatNumber(Math.round(r.population_density ?? 0))} people/sq mi`
+  : formatArea(r.land_area_sqmi);
+
+const answer = top3.length
+  ? `${page.intro} The top three are ${listJoin(top3.map((r) => `${r.zip} (${r.city}, ${r.state} — ${val(r)})`))}.`
+  : page.intro;
+
+const byState = new Map<string, number>();
+rows.forEach((r) => byState.set(r.state, (byState.get(r.state) || 0) + 1));
+const stateLeaders = [...byState.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
+const states = getStates();
+
+const faqs = [
+  ...(rows[0] ? [{ question: `What is the #1 ZIP code on this list?`, answer: `${rows[0].zip} in ${rows[0].city}, ${rows[0].state} ranks first with ${val(rows[0])}.` }] : []),
+  ...(stateLeaders.length ? [{ question: 'Which states appear most often?', answer: `${listJoin(stateLeaders.map(([s, n]) => `${states[s]?.name || s} (${n})`))} have the most ZIP codes in this top 100.` }] : []),
+  { question: 'Where does this data come from?', answer: `All figures come from US Census Bureau data for ZIP Code Tabulation Areas (${'2010 Census and American Community Survey estimates'}). ${page.note}` },
+];
+
+const listSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name: page.h1,
+  numberOfItems: rows.length,
+  itemListOrder: 'https://schema.org/ItemListOrderDescending',
+  itemListElement: rows.slice(0, 100).map((r, i) => ({ '@type': 'ListItem', position: i + 1, url: abs(zipUrl(r.zip)), name: `${r.zip} – ${r.city}, ${r.state}` })),
+};
+const description = clampDescription(answer);
+const crumbs = [{ name: 'Home', path: '/' }, { name: 'Rankings', path: '/rankings/' }, { name: page.short, path }];
+---
+
+<Base title={page.title} description={description} path={path} jsonLd={[listSchema, webPageSchema({ path, name: page.title, description, dateModified: meta.built })]}>
+  <div class="wrap pt-6">
+    <Breadcrumbs items={crumbs} />
+    <header class="mt-6 max-w-3xl">
+      <p class="eyebrow">National ranking · Top {rows.length}</p>
+      <h1 class="mt-3 font-display text-[2rem] font-semibold leading-[1.1] sm:text-[2.75rem]">{page.h1}</h1>
+      <p class="mt-5 text-[1.05rem] leading-relaxed text-ink-2" data-answer>{answer}</p>
+    </header>
+
+    {top3.length === 3 && (
+      <ol class="mt-8 grid gap-3 sm:grid-cols-3">
+        {top3.map((r, i) => (
+          <li class="card relative overflow-hidden p-5">
+            <span class="absolute right-4 top-3 font-display text-5xl font-semibold text-line">{i + 1}</span>
+            <a href={zipUrl(r.zip)} class="zipcode text-2xl text-ink no-underline hover:text-brand">{r.zip}</a>
+            <p class="mt-1 text-sm text-ink-2">{r.city}, {r.state}</p>
+            <p class="num mt-3 font-semibold text-ink">{val(r)}</p>
+          </li>
+        ))}
+      </ol>
+    )}
+
+    <AdSlot slot="top" />
+
+    <section class="mt-6">
+      <p class="text-sm text-ink-3">{page.note}</p>
+      <div class="mt-4"><RankTable rows={rows} metric={page.metric} showState /></div>
+    </section>
+
+    <section class="mt-10">
+      <h2 class="h-section">More rankings</h2>
+      <div class="mt-4 flex flex-wrap gap-2">
+        {RANKING_PAGES.filter((p) => p.slug !== page.slug).map((p) => <a href={`/rankings/${p.slug}/`} class="chip">{p.short}</a>)}
+        {stateLeaders.map(([s]) => <a href={topUrl(s)} class="chip">Top ZIPs in {states[s]?.name}</a>)}
+      </div>
+    </section>
+
+    <AdSlot slot="inContent" />
+    <div class="mt-12 max-w-4xl"><FAQ faqs={faqs} /></div>
+  </div>
+</Base>

@@ -1,45 +1,27 @@
 ---
 import Base from '../layouts/Base.astro';
 import SearchBox from '../components/SearchBox.astro';
-
-const title = 'Page Not Found — ZIPCodeDetails.com';
-const description = 'The ZIP code or page you are looking for could not be found. Search for any US ZIP code to find location and geographic details.';
 ---
 
-<Base title={title} description={description}>
-  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-    <div class="mb-8">
-      <p class="text-8xl font-black text-primary/20 tabular-nums">404</p>
-      <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 mt-4 mb-3">
-        Page Not Found
-      </h1>
-      <p class="text-slate-500 text-base">
-        The ZIP code or page you are looking for doesn't exist or may have been removed.
-      </p>
-    </div>
-
-    <div class="mb-10">
-      <p class="text-sm font-medium text-slate-700 mb-3">Search for a ZIP code:</p>
-      <SearchBox size="large" />
-    </div>
-
-    <div class="border-t border-slate-200 pt-8">
-      <p class="text-sm text-slate-500 mb-4">Or browse by location:</p>
-      <div class="flex flex-wrap justify-center gap-3 text-sm">
-        <a href="/" class="text-primary hover:underline font-medium">Home</a>
-        <span class="text-slate-300">·</span>
-        <a href="/state/ca" class="text-primary hover:underline font-medium">California</a>
-        <span class="text-slate-300">·</span>
-        <a href="/state/tx" class="text-primary hover:underline font-medium">Texas</a>
-        <span class="text-slate-300">·</span>
-        <a href="/state/ny" class="text-primary hover:underline font-medium">New York</a>
-        <span class="text-slate-300">·</span>
-        <a href="/state/fl" class="text-primary hover:underline font-medium">Florida</a>
-        <span class="text-slate-300">·</span>
-        <a href="/zip/90210" class="text-primary hover:underline font-medium">90210</a>
-        <span class="text-slate-300">·</span>
-        <a href="/zip/10001" class="text-primary hover:underline font-medium">10001</a>
+<Base title="Page not found – ZIPCodeDetails" description="We couldn't find that page. Search any US ZIP code, city or state." path="/404/" noindex headerSearch={false}>
+  <div class="wrap py-20">
+    <div class="mx-auto max-w-xl text-center">
+      <p class="zipcode inline-block rounded-lg border-2 border-dashed border-stamp px-4 py-1 text-5xl text-stamp">404</p>
+      <h1 class="mt-6 font-display text-3xl font-semibold sm:text-4xl">Return to sender</h1>
+      <p class="mt-3 text-ink-2" data-hint>That address doesn’t exist. Search for a ZIP code, city or state instead.</p>
+      <div class="mt-8"><SearchBox size="lg" /></div>
+      <div class="mt-8 flex flex-wrap justify-center gap-2 text-sm">
+        <a href="/" class="chip">Home</a>
+        <a href="/states/" class="chip">Browse states</a>
+        <a href="/what-is-my-zip-code/" class="chip">What’s my ZIP?</a>
       </div>
     </div>
   </div>
 </Base>
+
+<script>
+  // If someone typed /zip/12345-6789 or /12345, point them at the right page.
+  const m = location.pathname.match(/(\d{5})/);
+  const hint = document.querySelector('[data-hint]');
+  if (m && hint) hint.innerHTML = `Looking for ZIP code <a class="zipcode" href="/zip/${m[1]}/">${m[1]}</a>?`;
+</script>

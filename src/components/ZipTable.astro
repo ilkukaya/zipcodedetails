@@ -1,0 +1,66 @@
+---
+import type { ZipRecord } from '../lib/data';
+import { formatNumber, formatMoneyShort } from '../lib/formatters';
+import { zipUrl, cityUrl, countyUrl } from '../lib/url';
+
+interface Props {
+  rows: ZipRecord[];
+  showCity?: boolean;
+  showCounty?: boolean;
+  caption?: string;
+}
+const { rows, showCity = true, showCounty = false, caption } = Astro.props;
+---
+
+<div class="card overflow-hidden">
+  <div class="max-h-[42rem] overflow-auto">
+    <table class="data-table" data-sortable>
+      {caption && <caption class="sr-only">{caption}</caption>}
+      <thead>
+        <tr>
+          <th scope="col"><button type="button" data-sort="zip" class="uppercase">ZIP ↕</button></th>
+          {showCity && <th scope="col"><button type="button" data-sort="city" class="uppercase">City ↕</button></th>}
+          {showCounty && <th scope="col" class="hidden md:table-cell"><button type="button" data-sort="county" class="uppercase">County ↕</button></th>}
+          <th scope="col" class="hidden sm:table-cell">Type</th>
+          <th scope="col" class="text-right"><button type="button" data-sort="pop" data-num class="uppercase">Pop. ↕</button></th>
+          <th scope="col" class="hidden text-right sm:table-cell"><button type="button" data-sort="inc" data-num class="uppercase">Income ↕</button></th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((z) => (
+          <tr data-zip={z.zip} data-city={z.city} data-county={z.county} data-pop={z.population ?? -1} data-inc={z.median_household_income ?? -1}>
+            <td><a href={zipUrl(z.zip)} class="lz">{z.zip}</a></td>
+            {showCity && <td><a href={cityUrl(z.city_slug)} class="lm">{z.city}</a></td>}
+            {showCounty && <td class="hidden md:table-cell">{z.county ? <a href={countyUrl(z.county_slug)} class="lm">{z.county}</a> : '—'}</td>}
+            <td class="hidden sm:table-cell text-ink-3">{z.zip_type === 'PO BOX' ? 'PO Box' : 'Standard'}</td>
+            <td class="num text-right">{z.population ? formatNumber(z.population) : '—'}</td>
+            <td class="num hidden text-right sm:table-cell">{formatMoneyShort(z.median_household_income)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLTableElement>('table[data-sortable]').forEach((table) => {
+    const body = table.tBodies[0];
+    let last = '';
+    let dir = 1;
+    table.querySelectorAll<HTMLButtonElement>('[data-sort]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.sort!;
+        const num = btn.hasAttribute('data-num');
+        dir = last === key ? -dir : num ? -1 : 1;
+        last = key;
+        const rows = Array.from(body.rows);
+        rows.sort((a, b) => {
+          const x = a.dataset[key] || '';
+          const y = b.dataset[key] || '';
+          return (num ? parseFloat(x) - parseFloat(y) : x.localeCompare(y)) * dir;
+        });
+        body.append(...rows);
+      });
+    });
+  });
+</script>

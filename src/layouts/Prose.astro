@@ -1,0 +1,24 @@
+---
+import Base from './Base.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  heading: string;
+  crumb: string;
+  path: string;
+  noindex?: boolean;
+}
+const { title, description, heading, crumb, path, noindex } = Astro.props;
+---
+
+<Base title={title} description={description} path={path} noindex={noindex}>
+  <div class="wrap pt-6">
+    <Breadcrumbs items={[{ name: 'Home', path: '/' }, { name: crumb, path }]} />
+    <article class="prose prose-lg mt-8 max-w-3xl">
+      <h1>{heading}</h1>
+      <slot />
+    </article>
+  </div>
+</Base>

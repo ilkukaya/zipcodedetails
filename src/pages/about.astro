@@ -1,88 +1,31 @@
 ---
-import Base from '../layouts/Base.astro';
-import BreadcrumbSchema from '../components/BreadcrumbSchema.astro';
-
-const title = 'About — ZIPCodeDetails.com | Free US ZIP Code Reference';
-const description = 'Learn about ZIPCodeDetails.com — a free US ZIP code reference platform powered by US Census Bureau and USPS data.';
-
-const siteUrl = Astro.site?.origin || 'https://zipcodedetails.netlify.app';
-const breadcrumbs = [
-  { name: 'Home', url: siteUrl },
-  { name: 'About', url: `${siteUrl}/about` },
-];
+import Prose from '../layouts/Prose.astro';
+import { getMeta } from '../lib/data';
+import { formatNumber } from '../lib/formatters';
+import { SITE } from '../config/site';
+const m = getMeta();
 ---
 
-<Base title={title} description={description}>
-  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <BreadcrumbSchema items={breadcrumbs} />
+<Prose title="About ZIPCodeDetails – Independent US ZIP Code Reference" description="ZIPCodeDetails is a free, independent reference for every US ZIP code, built on public data from the US Census Bureau and USPS." heading="About ZIPCodeDetails" crumb="About" path="/about/">
+  <p class="lead">{SITE.brand} is a free, independent reference for US ZIP codes. We turn public government data into fast, readable pages for {formatNumber(m.zip_count)} ZIP codes, {formatNumber(m.city_count)} cities and towns, and {formatNumber(m.county_count)} counties.</p>
 
-    <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-6">About ZIPCodeDetails.com</h1>
+  <h2>What you’ll find here</h2>
+  <ul>
+    <li>A page for every standard and PO Box ZIP code: city, county, time zone, map, population, income, home values and nearby ZIP codes.</li>
+    <li>City, county and state pages listing every ZIP code with sortable data.</li>
+    <li>Free tools: <a href="/what-is-my-zip-code/">What’s my ZIP code?</a>, a <a href="/tools/zip-code-distance/">distance calculator</a> and a <a href="/tools/zip-code-radius/">radius search</a>.</li>
+    <li><a href="/rankings/">Rankings</a> of the richest, most expensive and most populated ZIP codes.</li>
+  </ul>
 
-    <div class="prose prose-slate max-w-none">
-      <p class="text-lg text-slate-600 leading-relaxed">
-        ZIPCodeDetails.com is a free reference platform for US ZIP code information.
-        We provide ZIP code lookup and geographic details for ZIP code areas across
-        the United States.
-      </p>
+  <h2>Where the data comes from</h2>
+  <p>Everything is built from public-domain datasets published by the US Census Bureau and the US Postal Service. Our <a href="/data-sources/">data sources &amp; methodology</a> page explains exactly what we use and the known limitations.</p>
 
-      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">What We Do</h2>
-      <p class="text-slate-600 leading-relaxed">
-        Our site helps users quickly look up ZIP code details including city, state,
-        county, time zone, geographic coordinates, land area, and nearby ZIP codes.
-        Whether you are researching locations, planning a move, or simply curious
-        about a location, ZIPCodeDetails.com provides the information you need in
-        a clean, fast, and free format.
-      </p>
+  <h2>Independence</h2>
+  <p>We are not affiliated with, endorsed by, or connected to the United States Postal Service. For official address validation, always use <a href="https://tools.usps.com/zip-code-lookup.htm" target="_blank" rel="noopener">USPS.com</a>.</p>
 
-      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Our Data Sources</h2>
-      <p class="text-slate-600 leading-relaxed">
-        All data on this site is derived from publicly available datasets:
-      </p>
-      <ul class="list-disc list-inside text-slate-600 space-y-2 mt-4">
-        <li><strong>Geographic coordinates and land/water area</strong> from <a href="https://www.census.gov/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">US Census Bureau</a> Gazetteer files</li>
-        <li><strong>City, state, and county mapping</strong> from Census relationship files and <a href="https://postalpro.usps.com/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">USPS</a> postal data</li>
-        <li><strong>Time zone data</strong> derived from geographic coordinates</li>
-        <li><strong>CBSA (metropolitan area) designations</strong> from Census metropolitan delineation files</li>
-      </ul>
+  <h2>How the site is funded</h2>
+  <p>The site is free to use and supported by advertising and, on some pages, clearly labeled partner links. Advertisers never influence our data. See our <a href="/affiliate-disclosure/">affiliate disclosure</a>.</p>
 
-      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Important Disclaimers</h2>
-      <div class="bg-amber-50 border border-amber-200 rounded-lg p-5 mt-4">
-        <ul class="list-disc list-inside text-slate-700 space-y-3 text-sm">
-          <li>
-            <strong>This site is for informational purposes only.</strong> It is not an
-            official USPS service and should not be used for address validation or
-            official mailing purposes.
-          </li>
-          <li>
-            ZIP codes shown on this site are based on <strong>ZIP Code Tabulation Areas (ZCTAs)</strong>,
-            which approximate but do not exactly match USPS delivery route boundaries.
-          </li>
-          <li>
-            Some ZIP codes (especially PO Box or unique codes) may have limited data available.
-          </li>
-          <li>
-            Data is updated periodically as new Census Bureau and USPS data become available.
-          </li>
-          <li>
-            For official address verification, please visit
-            <a href="https://www.usps.com/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">USPS.com</a>
-            or contact your local post office.
-          </li>
-        </ul>
-      </div>
-
-      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Free to Use</h2>
-      <p class="text-slate-600 leading-relaxed">
-        ZIPCodeDetails.com is completely free. We believe that public data from the
-        Census Bureau should be accessible to everyone in a clean, fast, and
-        user-friendly format. The site is supported by advertising.
-      </p>
-
-      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Contact</h2>
-      <p class="text-slate-600 leading-relaxed">
-        If you have questions, corrections, or feedback, please reach out via our
-        <a href="https://github.com/ilkukaya/zipcodedetails" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">GitHub repository</a>.
-      </p>
-    </div>
-  </div>
-</Base>
+  <h2>Corrections</h2>
+  <p>Spotted something wrong? <a href="/contact/">Tell us</a> — we read every message and fix verified errors in the next update.</p>
+</Prose>

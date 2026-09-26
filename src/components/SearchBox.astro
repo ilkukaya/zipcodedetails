@@ -1,189 +1,185 @@
 ---
 interface Props {
-  size?: 'large' | 'small';
+  size?: 'sm' | 'lg';
   placeholder?: string;
+  autofocus?: boolean;
+  value?: string;
 }
 
-const { size = 'small', placeholder = 'Search by ZIP code, city, or state...' } = Astro.props;
-const inputClass = size === 'large'
-  ? 'w-full px-6 py-4 text-lg rounded-xl border-2 border-slate-300 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all'
-  : 'w-full px-4 py-3 text-sm rounded-lg border border-slate-300 focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none transition-all';
+const { size = 'sm', placeholder = 'Enter a ZIP code, city or state', autofocus = false, value = '' } = Astro.props;
+const lg = size === 'lg';
+const uid = 'sb' + Math.random().toString(36).slice(2, 8);
 ---
 
-<div class="search-box relative w-full max-w-2xl mx-auto">
+<form
+  action="/search/"
+  method="get"
+  role="search"
+  class="relative w-full"
+  data-searchbox
+  data-uid={uid}
+>
+  <label for={`${uid}-input`} class="sr-only">Search ZIP codes, cities or states</label>
   <div class="relative">
-    <svg class={`absolute ${size === 'large' ? 'left-5 top-5 w-5 h-5' : 'left-3 top-3.5 w-4 h-4'} text-slate-400 pointer-events-none`} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
+    <svg
+      class={`pointer-events-none absolute top-1/2 -translate-y-1/2 text-ink-3 ${lg ? 'left-5 h-5 w-5' : 'left-3 h-4 w-4'}`}
+      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"
+    ><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
     <input
-      type="text"
-      id="zip-search-input"
-      class={`${inputClass} ${size === 'large' ? 'pl-14' : 'pl-10'}`}
-      placeholder={placeholder}
+      id={`${uid}-input`}
+      name="q"
+      type="search"
+      inputmode="search"
+      enterkeyhint="search"
       autocomplete="off"
-      aria-label="Search ZIP codes"
+      autocapitalize="off"
+      spellcheck="false"
+      value={value}
+      placeholder={placeholder}
+      autofocus={autofocus}
+      role="combobox"
+      aria-autocomplete="list"
+      aria-expanded="false"
+      aria-controls={`${uid}-list`}
+      class={lg
+        ? 'h-16 w-full rounded-2xl border border-line-strong bg-surface pl-14 pr-32 text-lg text-ink shadow-lift outline-none transition placeholder:text-ink-4 focus:border-brand focus:ring-4 focus:ring-brand/15'
+        : 'h-10 w-full rounded-lg border border-line bg-surface pl-9 pr-3 text-[0.92rem] text-ink outline-none transition placeholder:text-ink-4 focus:border-brand focus:ring-2 focus:ring-brand/15'}
     />
+    {lg && (
+      <button type="submit" class="absolute right-2 top-1/2 h-12 -translate-y-1/2 rounded-xl bg-ink px-5 text-[0.95rem] font-semibold text-white transition hover:bg-brand-dark">
+        Search
+      </button>
+    )}
   </div>
-  <div id="search-results" class="absolute z-50 w-full mt-1 bg-white rounded-lg shadow-lg border border-slate-200 hidden max-h-80 overflow-y-auto"></div>
-</div>
+  <ul
+    id={`${uid}-list`}
+    role="listbox"
+    class="absolute left-0 right-0 z-50 mt-2 hidden max-h-[22rem] overflow-y-auto rounded-xl border border-line bg-surface py-1 text-left shadow-lift"
+  ></ul>
+</form>
 
 <script>
-  let searchData: Array<{ zip: string; city: string; state: string }> | null = null;
+  import { loadIndex, search, hitUrl, esc, STATE_NAMES, type Hit } from '../scripts/zipindex';
 
-  async function loadSearchData() {
-    if (searchData) return searchData;
-    try {
-      const resp = await fetch('/search_index.json');
-      searchData = await resp.json();
-    } catch {
-      searchData = [];
+  function label(h: Hit): string {
+    if (h.kind === 'zip') {
+      return `<span class="zipcode text-ink">${esc(h.zip)}</span><span class="ml-2 text-ink-2">${esc(h.city)}, ${esc(h.state)}</span>`;
     }
-    return searchData;
+    if (h.kind === 'city') {
+      return `<span class="font-medium text-ink">${esc(h.city)}, ${esc(h.state)}</span><span class="ml-2 text-xs text-ink-3">${h.count} ZIP${h.count === 1 ? '' : 's'}</span>`;
+    }
+    return `<span class="font-medium text-ink">${esc(h.name)}</span><span class="ml-2 text-xs text-ink-3">State · all ZIP codes</span>`;
   }
 
-  function escapeHtml(str: string): string {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+  function kindTag(h: Hit): string {
+    return h.kind === 'zip' ? 'ZIP' : h.kind === 'city' ? 'City' : 'State';
   }
 
-  function citySlug(city: string, state: string): string {
-    return (
-      city
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-') +
-      '-' +
-      state.toLowerCase()
-    );
-  }
+  function init(form: HTMLFormElement) {
+    const input = form.querySelector('input')!;
+    const list = form.querySelector('ul')!;
+    const uid = form.dataset.uid!;
+    let hits: Hit[] = [];
+    let active = -1;
+    let seq = 0;
 
-  const input = document.getElementById('zip-search-input') as HTMLInputElement;
-  const results = document.getElementById('search-results') as HTMLDivElement;
+    const close = () => {
+      list.classList.add('hidden');
+      input.setAttribute('aria-expanded', 'false');
+      input.removeAttribute('aria-activedescendant');
+      active = -1;
+    };
 
-  if (input && results) {
-    let debounce: ReturnType<typeof setTimeout>;
-
-    input.addEventListener('input', () => {
-      clearTimeout(debounce);
-      debounce = setTimeout(async () => {
-        const q = input.value.trim().toLowerCase();
-        if (q.length < 2) {
-          results.classList.add('hidden');
-          return;
-        }
-
-        const data = await loadSearchData();
-        if (!data) return;
-
-        // Find matching ZIPs
-        const zipMatches = data
-          .filter(
-            (d) =>
-              d.zip.startsWith(q) ||
-              d.city.toLowerCase().includes(q) ||
-              d.state.toLowerCase() === q
-          )
-          .slice(0, 8);
-
-        // Deduplicate cities for city-level results
-        const cityMap = new Map<string, { city: string; state: string; count: number }>();
-        for (const d of data) {
-          if (d.city.toLowerCase().includes(q) || d.state.toLowerCase() === q) {
-            const key = `${d.city}_${d.state}`;
-            if (!cityMap.has(key)) {
-              cityMap.set(key, { city: d.city, state: d.state, count: 1 });
-            } else {
-              cityMap.get(key)!.count++;
-            }
-          }
-        }
-        const cityMatches = Array.from(cityMap.values())
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 4);
-
-        // Deduplicate states
-        const stateMap = new Map<string, { state: string; count: number }>();
-        for (const d of data) {
-          if (d.state.toLowerCase().startsWith(q)) {
-            if (!stateMap.has(d.state)) {
-              stateMap.set(d.state, { state: d.state, count: 1 });
-            } else {
-              stateMap.get(d.state)!.count++;
-            }
-          }
-        }
-        const stateMatches = Array.from(stateMap.values()).slice(0, 3);
-
-        if (zipMatches.length === 0 && cityMatches.length === 0 && stateMatches.length === 0) {
-          results.innerHTML = '<div class="p-4 text-sm text-slate-500">No results found. Try a ZIP code, city, or state name.</div>';
-        } else {
-          let html = '';
-
-          // State results
-          if (stateMatches.length > 0 && q.length <= 3) {
-            html += '<div class="px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider bg-slate-50">States</div>';
-            for (const s of stateMatches) {
-              html += `<a href="/state/${encodeURIComponent(s.state.toLowerCase())}" class="flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-100 no-underline">
-                <div>
-                  <span class="text-sm font-semibold text-slate-700">${escapeHtml(s.state)}</span>
-                  <span class="text-xs text-slate-400 ml-2">${s.count} ZIP codes</span>
-                </div>
-                <svg class="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-              </a>`;
-            }
-          }
-
-          // City results
-          if (cityMatches.length > 0 && !/^\d/.test(q)) {
-            html += '<div class="px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider bg-slate-50">Cities</div>';
-            for (const c of cityMatches) {
-              const slug = citySlug(c.city, c.state);
-              html += `<a href="/city/${encodeURIComponent(slug)}" class="flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-100 no-underline">
-                <div>
-                  <span class="text-sm font-semibold text-slate-700">${escapeHtml(c.city)}, ${escapeHtml(c.state)}</span>
-                  <span class="text-xs text-slate-400 ml-2">${c.count} ZIP codes</span>
-                </div>
-                <svg class="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-              </a>`;
-            }
-          }
-
-          // ZIP results
-          if (zipMatches.length > 0) {
-            html += '<div class="px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider bg-slate-50">ZIP Codes</div>';
-            for (const m of zipMatches) {
-              html += `<a href="/zip/${encodeURIComponent(m.zip)}" class="flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0 no-underline">
-                <div>
-                  <span class="font-semibold text-primary">${escapeHtml(m.zip)}</span>
-                  <span class="text-sm text-slate-600 ml-2">${escapeHtml(m.city)}, ${escapeHtml(m.state)}</span>
-                </div>
-                <svg class="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-              </a>`;
-            }
-          }
-
-          results.innerHTML = html;
-        }
-        results.classList.remove('hidden');
-      }, 200);
-    });
-
-    input.addEventListener('keydown', (e: KeyboardEvent) => {
-      if (e.key === 'Enter') {
+    const render = () => {
+      if (!hits.length) {
         const q = input.value.trim();
-        if (/^\d{5}$/.test(q)) {
-          window.location.href = `/zip/${q}`;
-        }
+        list.innerHTML = q.length >= 2
+          ? `<li class="px-4 py-3 text-sm text-ink-3">No matches for “${esc(q)}”. Try a 5-digit ZIP or a city name.</li>`
+          : '';
+        list.classList.toggle('hidden', q.length < 2);
+        return;
+      }
+      list.innerHTML = hits
+        .map(
+          (h, i) => `<li id="${uid}-o${i}" role="option" aria-selected="${i === active}">
+            <a href="${hitUrl(h)}" class="flex items-center justify-between gap-3 px-4 py-2.5 text-[0.93rem] no-underline ${i === active ? 'bg-brand-soft' : 'hover:bg-paper'}">
+              <span class="truncate">${label(h)}</span>
+              <span class="shrink-0 font-mono text-[0.65rem] uppercase tracking-widest text-ink-4">${kindTag(h)}</span>
+            </a></li>`
+        )
+        .join('');
+      list.classList.remove('hidden');
+      input.setAttribute('aria-expanded', 'true');
+      if (active >= 0) input.setAttribute('aria-activedescendant', `${uid}-o${active}`);
+    };
+
+    const run = async () => {
+      const my = ++seq;
+      const q = input.value;
+      if (q.trim().length < 1 || (!/^\d/.test(q.trim()) && q.trim().length < 2)) {
+        hits = [];
+        close();
+        return;
+      }
+      const rows = await loadIndex();
+      if (my !== seq) return;
+      hits = search(rows, q, 8);
+      active = -1;
+      render();
+    };
+
+    let t: number | undefined;
+    input.addEventListener('input', () => {
+      clearTimeout(t);
+      t = window.setTimeout(run, 90);
+    });
+    input.addEventListener('focus', () => {
+      loadIndex();
+      if (hits.length) render();
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown' && hits.length) {
+        e.preventDefault();
+        active = (active + 1) % hits.length;
+        render();
+      } else if (e.key === 'ArrowUp' && hits.length) {
+        e.preventDefault();
+        active = (active - 1 + hits.length) % hits.length;
+        render();
+      } else if (e.key === 'Escape') {
+        close();
       }
     });
-
-    document.addEventListener('click', (e) => {
-      if (!results.contains(e.target as Node) && e.target !== input) {
-        results.classList.add('hidden');
+    form.addEventListener('submit', (e) => {
+      const q = input.value.trim();
+      if (!q) {
+        e.preventDefault();
+        input.focus();
+        return;
       }
+      const five = q.replace(/\D/g, '');
+      if (/^\d{5}(-?\d{4})?$/.test(q.replace(/\s/g, ''))) {
+        e.preventDefault();
+        location.href = `/zip/${five.slice(0, 5)}/`;
+        return;
+      }
+      const pick = active >= 0 ? hits[active] : null;
+      if (pick) {
+        e.preventDefault();
+        location.href = hitUrl(pick);
+        return;
+      }
+      const st = Object.entries(STATE_NAMES).find(([a, n]) => n.toLowerCase() === q.toLowerCase() || a.toLowerCase() === q.toLowerCase());
+      if (st) {
+        e.preventDefault();
+        location.href = `/state/${st[0].toLowerCase()}/`;
+      }
+      // otherwise fall through to /search/?q=
+    });
+    document.addEventListener('click', (e) => {
+      if (!form.contains(e.target as Node)) close();
     });
   }
+
+  document.querySelectorAll<HTMLFormElement>('form[data-searchbox]').forEach(init);
 </script>

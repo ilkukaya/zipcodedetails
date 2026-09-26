@@ -1,0 +1,18 @@
+---
+interface Props {
+  items: { k: string; v: string; sub?: string; href?: string }[];
+}
+const { items } = Astro.props;
+---
+
+<dl class="grid grid-cols-2 overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-3 lg:grid-cols-4" style="gap:1px">
+  {items.map((f) => (
+    <div class="bg-surface p-4">
+      <dt class="eyebrow !text-[0.66rem]">{f.k}</dt>
+      <dd class="mt-1.5 text-[1.05rem] font-semibold leading-snug text-ink">
+        {f.href ? <a href={f.href} class="text-ink underline decoration-line-strong underline-offset-4 hover:text-brand hover:decoration-brand">{f.v}</a> : f.v}
+      </dd>
+      {f.sub && <dd class="mt-0.5 text-xs text-ink-3">{f.sub}</dd>}
+    </div>
+  ))}
+</dl>

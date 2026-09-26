@@ -1,262 +1,208 @@
 ---
 import Base from '../layouts/Base.astro';
 import SearchBox from '../components/SearchBox.astro';
-import ZipCard from '../components/ZipCard.astro';
-import FAQSection from '../components/FAQSection.astro';
-import AdSenseUnit from '../components/AdSenseUnit.astro';
-import fs from 'node:fs';
-import path from 'node:path';
-import { citySlug } from '../lib/formatters';
+import FAQ from '../components/FAQ.astro';
+import AdSlot from '../components/AdSlot.astro';
+import { getStates, getMeta, getRankings, getZip, getCities } from '../lib/data';
+import { formatNumber, formatMoney, formatMoneyShort, citySlug } from '../lib/formatters';
+import { zipUrl, stateUrl, cityUrl } from '../lib/url';
+import { SITE } from '../config/site';
 
-const stateIndex = JSON.parse(
-  fs.readFileSync(path.join(process.cwd(), 'data', 'state_index.json'), 'utf-8')
-);
+const meta = getMeta();
+const states = Object.entries(getStates()).sort((a, b) => a[1].name.localeCompare(b[1].name));
+const nat = getRankings().national;
+const sample = getZip('90210');
+const cities = getCities();
 
-const cityIndex = JSON.parse(
-  fs.readFileSync(path.join(process.cwd(), 'data', 'city_index.json'), 'utf-8')
-);
+const bigCities = [
+  ['New York', 'NY'], ['Los Angeles', 'CA'], ['Chicago', 'IL'], ['Houston', 'TX'], ['Phoenix', 'AZ'],
+  ['Philadelphia', 'PA'], ['San Antonio', 'TX'], ['San Diego', 'CA'], ['Dallas', 'TX'], ['Austin', 'TX'],
+  ['Jacksonville', 'FL'], ['Columbus', 'OH'], ['Charlotte', 'NC'], ['Indianapolis', 'IN'], ['San Francisco', 'CA'],
+  ['Seattle', 'WA'], ['Denver', 'CO'], ['Washington', 'DC'], ['Nashville', 'TN'], ['Las Vegas', 'NV'],
+  ['Atlanta', 'GA'], ['Miami', 'FL'], ['Boston', 'MA'], ['Portland', 'OR'],
+]
+  .map(([c, s]) => ({ c, s, slug: citySlug(c, s) }))
+  .filter((x) => cities[x.slug]);
 
-const popularZips = JSON.parse(
-  fs.readFileSync(path.join(process.cwd(), 'data', 'popular_zips.json'), 'utf-8')
-);
-
-// Filter out Carrier Annex, PO Box, Station, Branch, Retail etc. from featured
-const excludePatterns = /\b(annex|carrier|station|branch|retail|po box|p\.o\. box|drawer|unit|lobby|terminal|airport)\b/i;
-const cleanZips = popularZips.filter((z: any) => !excludePatterns.test(z.city || ''));
-const featuredZips = cleanZips.slice(0, 12);
-
-const totalZips = Object.values(stateIndex).reduce((sum: number, s: any) => sum + (s.zip_count || 0), 0);
-const totalStates = Object.keys(stateIndex).length;
-
-// Build popular cities list from city index (top 20 by zip count)
-const allCities = Object.values(cityIndex) as any[];
-const popularCities = allCities
-  .filter((c: any) => c.city && c.state && (c.zips?.length || 0) > 0)
-  .sort((a: any, b: any) => (b.zips?.length || 0) - (a.zips?.length || 0))
-  .slice(0, 20);
-
-const title = 'ZIP Code Details — Free US ZIP Code Lookup | ZIPCodeDetails.com';
-const description = `Search ${totalZips.toLocaleString()} ZIP codes in the United States. Free location, geographic, and postal data for every US ZIP code area.`;
+const title = 'ZIP Code Lookup – Every US ZIP Code with Map & Demographics';
+const description = `Free ZIP code lookup for all ${formatNumber(meta.zip_count)} US ZIP codes: city, county, time zone, map, population, income and home values. Find your ZIP code, measure distances and search by radius.`;
 
 const faqs = [
-  {
-    question: 'What is a ZIP code?',
-    answer: 'A ZIP code (Zone Improvement Plan code) is a postal code used by the United States Postal Service (USPS). Introduced in 1963, ZIP codes help the USPS efficiently route and deliver mail. The basic format is five digits (e.g., 90210), though an extended ZIP+4 format adds four more digits for more precise locations.',
-  },
-  {
-    question: 'How do I find my ZIP code?',
-    answer: 'You can find your ZIP code by using the search box above. Simply type your city name, state, or address, and we will show matching ZIP codes. You can also search by ZIP code number directly to see its associated city and state.',
-  },
-  {
-    question: 'How do I find ZIP codes by city?',
-    answer: 'Use the search box to type any city name. We will show you all matching ZIP codes for that city. You can also browse ZIP codes by state or use our city pages to see every ZIP code in a specific city.',
-  },
-  {
-    question: 'What information does a ZIP code contain?',
-    answer: 'Each ZIP code is associated with a primary city, state, and county. Through Census Bureau and USPS data, we also provide land area, geographic coordinates, time zone, and metro area (CBSA) for each ZIP code tabulation area.',
-  },
-  {
-    question: 'Are ZIP codes the same as postal codes?',
-    answer: 'Yes, in the United States, ZIP codes are the postal code system. The term "postal code" is used internationally, while "ZIP code" is specific to the US. Other countries have their own postal code systems with different formats.',
-  },
-  {
-    question: 'Are ZIP codes the same as ZIP+4?',
-    answer: 'No. A standard ZIP code is 5 digits and covers a general geographic area. ZIP+4 codes add four extra digits to pinpoint a specific delivery segment, such as a city block, building, or PO Box group. This site focuses on the standard 5-digit ZIP codes.',
-  },
-  {
-    question: 'How many ZIP codes are in the United States?',
-    answer: `There are approximately ${totalZips.toLocaleString()} ZIP code tabulation areas (ZCTAs) in the United States, based on US Census Bureau data. The exact number of active USPS ZIP codes can vary as new codes are added or old ones are retired.`,
-  },
-  {
-    question: 'Is this official USPS data?',
-    answer: 'No. This site uses publicly available data from the US Census Bureau Gazetteer files and USPS postal data. For official address validation or mailing purposes, please use USPS.com or an authorized USPS service.',
-  },
-  {
-    question: 'How accurate is this data?',
-    answer: 'Our data is sourced from the US Census Bureau Gazetteer files and USPS postal data. Geographic boundaries are based on ZIP Code Tabulation Areas (ZCTAs), which approximate but do not exactly match USPS delivery routes.',
-  },
+  { question: 'What is a ZIP code?', answer: 'A ZIP code is the 5-digit postal code the United States Postal Service uses to route mail. “ZIP” stands for Zone Improvement Plan; the system launched on July 1, 1963. The first digit marks a broad region (0 in the Northeast through 9 on the West Coast), and the next digits narrow it down to a processing center and a post office.' },
+  { question: 'How many ZIP codes are there in the US?', answer: `There are roughly 41,000 ZIP codes in use. This site covers the ${formatNumber(meta.zip_count)} standard and PO Box ZIP codes people search for most; unique ZIPs assigned to single organizations and military ZIPs are not included.` },
+  { question: 'How do I find my ZIP code?', answer: 'Use “What’s my ZIP code?” to detect it from your location, type your city into the search box above, or check a recent piece of mail. For the exact ZIP+4 of an address, use the USPS ZIP code lookup.' },
+  { question: 'Is this official USPS data?', answer: 'No. ZIPCodeDetails is an independent reference built on public-domain data from the US Census Bureau and USPS. For address validation, use USPS.com.' },
+  { question: 'What is the difference between a ZIP code and a ZCTA?', answer: 'ZIP codes are lists of delivery routes maintained by USPS. ZIP Code Tabulation Areas (ZCTAs) are the Census Bureau’s area approximations of them, which is what makes it possible to report population, income and land area by ZIP code.' },
 ];
-
-const faqSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: faqs.map((f) => ({
-    '@type': 'Question',
-    name: f.question,
-    acceptedAnswer: { '@type': 'Answer', text: f.answer },
-  })),
-};
-
-const siteOrigin = Astro.site?.origin || 'https://zipcodedetails.netlify.app';
-
-const websiteSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  name: 'ZIPCodeDetails.com',
-  url: siteOrigin,
-  description: 'Free US ZIP code lookup with location and geographic data.',
-  potentialAction: {
-    '@type': 'SearchAction',
-    target: `${siteOrigin}/search?q={search_term_string}`,
-    'query-input': 'required name=search_term_string',
-  },
-};
-
-const orgSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'Organization',
-  name: 'ZIPCodeDetails.com',
-  url: siteOrigin,
-  logo: `${siteOrigin}/favicon.svg`,
-  description: 'Free US ZIP code lookup and reference data.',
-};
-
-const stateEntries = Object.entries(stateIndex).sort((a: any, b: any) => a[1].name.localeCompare(b[1].name));
 ---
 
-<Base title={title} description={description} jsonLd={[faqSchema, websiteSchema, orgSchema]}>
-  <!-- Hero Section -->
-  <section class="bg-gradient-to-br from-primary-dark via-primary to-blue-600 text-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-      <div class="text-center max-w-3xl mx-auto">
-        <h1 class="text-3xl sm:text-5xl font-bold mb-4 leading-tight">
-          ZIP Code Details — Free US ZIP Code Lookup
+<Base title={title} description={description} path="/" headerSearch={false} siteSchema>
+  <!-- Hero -->
+  <section class="relative overflow-hidden border-b border-line">
+    <div class="wrap grid items-center gap-12 py-14 sm:py-20 lg:grid-cols-[1.25fr_1fr] lg:py-24">
+      <div>
+        <p class="eyebrow">{formatNumber(meta.zip_count)} ZIP codes · {meta.state_count} states &amp; territories</p>
+        <h1 class="mt-4 font-display text-[2.6rem] font-semibold leading-[1.02] tracking-tight sm:text-6xl lg:text-[4.2rem]">
+          Every US ZIP code,<br /><span class="italic text-brand">explained.</span>
         </h1>
-        <p class="text-lg sm:text-xl text-blue-100 mb-8">
-          Search ZIP codes, cities, and states across the United States
+        <p class="mt-5 max-w-xl text-lg leading-relaxed text-ink-2">
+          Look up any ZIP code to see its city, county, time zone and map — plus who lives there, what homes are worth, and the ZIP codes next door.
         </p>
-        <SearchBox size="large" />
-        <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm text-blue-200">
-          <span>Popular:</span>
-          {[
-            { zip: '90210', label: 'Beverly Hills' },
-            { zip: '10001', label: 'New York' },
-            { zip: '60601', label: 'Chicago' },
-            { zip: '33101', label: 'Miami' },
-            { zip: '90001', label: 'Los Angeles' },
-          ].map((z) => (
-            <a href={`/zip/${z.zip}`} class="bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full transition-colors">
-              {z.zip} {z.label}
-            </a>
+        <div class="mt-8 max-w-xl">
+          <SearchBox size="lg" placeholder="ZIP code, city or state" />
+        </div>
+        <div class="mt-5 flex flex-wrap items-center gap-2 text-sm">
+          <a href="/what-is-my-zip-code/" class="chip border-ink/15 font-medium text-ink">
+            <svg class="h-4 w-4 text-stamp" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3" /><circle cx="12" cy="12" r="8" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2" /></svg>
+            What’s my ZIP code?
+          </a>
+          {['10001', '60601', '33139', '94110', '78701'].map((z) => (
+            <a href={zipUrl(z)} class="chip"><span class="zipcode text-ink-2">{z}</span></a>
           ))}
         </div>
       </div>
+
+      {sample && (
+        <a href={zipUrl(sample.zip)} class="group relative mx-auto hidden w-full max-w-sm no-underline lg:block" aria-label={`Example: ZIP code ${sample.zip}`}>
+          <div class="absolute -right-3 -top-3 z-10 rotate-6 rounded-md border-2 border-stamp bg-paper px-3 py-1.5 font-mono text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-stamp">Sample ZIP</div>
+          <div class="rounded-2xl border border-line bg-surface p-1.5 shadow-lift transition group-hover:-translate-y-1">
+            <div class="airmail h-2 rounded-t-xl"></div>
+            <div class="p-6">
+              <p class="eyebrow">ZIP code</p>
+              <p class="zipcode mt-1 text-6xl text-ink">{sample.zip}</p>
+              <p class="mt-1 font-display text-xl text-ink-2">{sample.city}, {sample.state}</p>
+              <dl class="mt-6 grid grid-cols-2 gap-4 border-t border-dashed border-line-strong pt-5 text-sm">
+                <div><dt class="text-ink-3">Population</dt><dd class="num mt-0.5 font-semibold text-ink">{formatNumber(sample.population)}</dd></div>
+                <div><dt class="text-ink-3">Median income</dt><dd class="num mt-0.5 font-semibold text-ink">{formatMoneyShort(sample.median_household_income)}</dd></div>
+                <div><dt class="text-ink-3">County</dt><dd class="mt-0.5 font-semibold text-ink">{sample.county.replace(' County', '')}</dd></div>
+                <div><dt class="text-ink-3">Home value</dt><dd class="num mt-0.5 font-semibold text-ink">{formatMoneyShort(sample.median_home_value)}</dd></div>
+              </dl>
+              <p class="mt-6 text-sm font-semibold text-brand">Open ZIP {sample.zip} →</p>
+            </div>
+          </div>
+        </a>
+      )}
     </div>
   </section>
 
-  <!-- Stats Bar -->
-  <section class="bg-white border-b border-slate-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
-        <div>
-          <p class="text-2xl font-black text-primary tabular-nums">{totalZips.toLocaleString()}</p>
-          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mt-1">ZIP Codes</p>
+  <!-- Numbers -->
+  <section class="border-b border-line bg-surface">
+    <div class="wrap grid grid-cols-2 divide-line py-6 sm:grid-cols-4 sm:divide-x">
+      {[
+        [formatNumber(meta.zip_count), 'ZIP codes'],
+        [formatNumber(meta.city_count), 'cities & towns'],
+        [formatNumber(meta.county_count), 'counties'],
+        ['Free', 'no sign-up, ever'],
+      ].map(([n, l]) => (
+        <div class="px-4 py-2 text-center">
+          <p class="num font-mono text-2xl font-semibold text-ink sm:text-3xl">{n}</p>
+          <p class="mt-1 text-sm text-ink-3">{l}</p>
         </div>
-        <div>
-          <p class="text-2xl font-black text-primary tabular-nums">{totalStates}</p>
-          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mt-1">States & Territories</p>
-        </div>
-        <div>
-          <p class="text-2xl font-black text-primary tabular-nums">3,143</p>
-          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mt-1">Counties</p>
-        </div>
-        <div>
-          <p class="text-2xl font-black text-accent tabular-nums">Free</p>
-          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mt-1">Forever</p>
-        </div>
-      </div>
+      ))}
     </div>
   </section>
 
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <!-- Featured ZIP Codes -->
-    <section class="mb-16">
-      <h2 class="text-2xl font-semibold text-slate-900 mb-6">Featured ZIP Codes</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {featuredZips.map((z: any) => (
-          <ZipCard zip={z.zip} city={z.city} state={z.state} />
-        ))}
+  <div class="wrap">
+    <!-- Tools -->
+    <section class="mt-16">
+      <div class="flex items-end justify-between gap-4">
+        <h2 class="h-section">Tools people use every day</h2>
+        <a href="/tools/" class="hidden text-sm link sm:inline">All tools →</a>
       </div>
-    </section>
-
-    <AdSenseUnit slot="home-mid-leaderboard" format="horizontal" />
-
-    <!-- How It Works -->
-    <section class="mb-16">
-      <h2 class="text-2xl font-semibold text-slate-900 mb-6 text-center">How It Works</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div class="text-center">
-          <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
-            <svg class="w-6 h-6 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-          </div>
-          <h3 class="font-semibold text-slate-900 mb-2">1. Search</h3>
-          <p class="text-sm text-slate-500">Enter a ZIP code, city name, or state to find matching locations instantly.</p>
-        </div>
-        <div class="text-center">
-          <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
-            <svg class="w-6 h-6 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" />
-            </svg>
-          </div>
-          <h3 class="font-semibold text-slate-900 mb-2">2. View Details</h3>
-          <p class="text-sm text-slate-500">See city, county, state, time zone, and geographic information for any ZIP code.</p>
-        </div>
-        <div class="text-center">
-          <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
-            <svg class="w-6 h-6 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-            </svg>
-          </div>
-          <h3 class="font-semibold text-slate-900 mb-2">3. Use The Data</h3>
-          <p class="text-sm text-slate-500">Look up postal codes, plan a move, or explore geographic data for free.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- Browse by City -->
-    <section class="mb-16">
-      <h2 class="text-2xl font-semibold text-slate-900 mb-6">Browse ZIP Codes by City</h2>
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-        {popularCities.map((c: any) => (
-          <a
-            href={`/city/${citySlug(c.city, c.state)}`}
-            class="flex items-center justify-between bg-white rounded-lg border border-slate-200 px-4 py-3 hover:border-primary/30 hover:shadow-sm transition-all group no-underline"
-          >
-            <span class="text-sm font-medium text-slate-700 group-hover:text-primary transition-colors">{c.city}, {c.state}</span>
-            <span class="text-xs text-slate-400 tabular-nums">{c.zips?.length || 0}</span>
+      <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          { href: '/what-is-my-zip-code/', t: 'What’s my ZIP code?', d: 'One tap to find the ZIP code where you are.', n: '01' },
+          { href: '/tools/zip-code-distance/', t: 'Distance calculator', d: 'Miles between any two ZIP codes.', n: '02' },
+          { href: '/tools/zip-code-radius/', t: 'Radius search', d: 'All ZIP codes within 1–100 miles, CSV export.', n: '03' },
+          { href: '/rankings/richest-zip-codes/', t: 'Richest ZIP codes', d: 'The top 100 by household income.', n: '04' },
+        ].map((t) => (
+          <a href={t.href} class="card group flex flex-col p-5 no-underline transition hover:-translate-y-0.5 hover:shadow-lift">
+            <span class="font-mono text-xs text-stamp">{t.n}</span>
+            <span class="mt-3 font-display text-lg font-semibold text-ink group-hover:text-brand">{t.t}</span>
+            <span class="mt-1.5 text-sm text-ink-2">{t.d}</span>
           </a>
         ))}
       </div>
     </section>
 
-    <!-- Browse by State -->
-    <section class="mb-16">
-      <h2 class="text-2xl font-semibold text-slate-900 mb-6">Browse ZIP Codes by State</h2>
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-        {stateEntries.map(([abbr, info]: [string, any]) => (
-          <a
-            href={`/state/${abbr.toLowerCase()}`}
-            class="flex items-center justify-between bg-white rounded-lg border border-slate-200 px-4 py-3 hover:border-primary/30 hover:shadow-sm transition-all group no-underline"
-          >
-            <span class="text-sm font-medium text-slate-700 group-hover:text-primary transition-colors">{info.name}</span>
-            <span class="text-xs text-slate-400 tabular-nums">{info.zip_count?.toLocaleString()}</span>
+    <AdSlot slot="top" />
+
+    <!-- Cities -->
+    <section class="mt-16">
+      <h2 class="h-section">ZIP codes for major cities</h2>
+      <div class="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+        {bigCities.map((x) => (
+          <a href={cityUrl(x.slug)} class="flex items-center justify-between rounded-lg border border-line bg-surface px-3.5 py-3 no-underline transition hover:border-brand/40">
+            <span class="truncate text-[0.93rem] font-medium text-ink">{x.c}</span>
+            <span class="num ml-2 shrink-0 font-mono text-xs text-ink-4">{cities[x.slug].zips.length}</span>
           </a>
         ))}
       </div>
     </section>
 
-    <AdSenseUnit slot="home-bottom-leaderboard" format="horizontal" />
+    <!-- Rankings teaser -->
+    <section class="mt-16 grid gap-6 lg:grid-cols-3">
+      {[
+        { t: 'Richest ZIP codes', href: '/rankings/richest-zip-codes/', rows: nat.income?.slice(0, 5) || [], f: (r: any) => formatMoney(r.median_household_income) },
+        { t: 'Most expensive homes', href: '/rankings/most-expensive-zip-codes/', rows: nat.home_value?.slice(0, 5) || [], f: (r: any) => formatMoney(r.median_home_value) },
+        { t: 'Most populated', href: '/rankings/most-populated-zip-codes/', rows: nat.population?.slice(0, 5) || [], f: (r: any) => formatNumber(r.population) },
+      ].map((b) => (
+        <div class="card p-6">
+          <div class="flex items-baseline justify-between">
+            <h3 class="font-display text-lg font-semibold">{b.t}</h3>
+            <a href={b.href} class="text-sm link">Top 100 →</a>
+          </div>
+          <ol class="mt-4 space-y-2.5 text-sm">
+            {b.rows.map((r: any, i: number) => (
+              <li class="flex items-baseline justify-between gap-3">
+                <span class="truncate"><span class="num mr-2 text-ink-4">{i + 1}</span><a href={zipUrl(r.zip)} class="lz">{r.zip}</a> <span class="text-ink-3">{r.city}, {r.state}</span></span>
+                <span class="num shrink-0 font-medium">{b.f(r)}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      ))}
+    </section>
 
-    <!-- FAQ -->
-    <FAQSection faqs={faqs} />
+    <!-- States -->
+    <section class="mt-16">
+      <div class="flex items-end justify-between gap-4">
+        <h2 class="h-section">Browse ZIP codes by state</h2>
+        <a href="/states/" class="hidden text-sm link sm:inline">State table →</a>
+      </div>
+      <div class="mt-6 grid grid-cols-2 gap-x-6 sm:grid-cols-3 lg:grid-cols-5">
+        {states.map(([abbr, s]) => (
+          <a href={stateUrl(abbr)} class="flex items-center justify-between border-b border-line py-2.5 text-[0.93rem] no-underline hover:text-brand">
+            <span class="text-ink-2">{s.name}</span>
+            <span class="num font-mono text-xs text-ink-4">{formatNumber(s.zip_count)}</span>
+          </a>
+        ))}
+      </div>
+    </section>
 
-    <!-- Census Attribution -->
-    <div class="mt-12 text-center">
-      <p class="text-xs text-slate-400">
-        Data sourced from <a href="https://www.census.gov/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">US Census Bureau</a> and <a href="https://postalpro.usps.com/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">USPS</a>. This site is for informational purposes only.
-      </p>
-    </div>
+    <!-- Guides -->
+    <section class="mt-16 rounded-2xl bg-ink p-8 text-paper sm:p-10">
+      <p class="font-mono text-xs uppercase tracking-[0.14em] text-paper/60">Guides</p>
+      <h2 class="mt-2 font-display text-2xl font-semibold text-paper sm:text-3xl">ZIP codes, decoded</h2>
+      <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          ['/guides/what-is-a-zip-code/', 'What is a ZIP code?', 'History, structure and types.'],
+          ['/guides/us-zip-code-format/', 'ZIP code format', 'What every digit means.'],
+          ['/guides/what-is-zip-plus-4/', 'What is ZIP+4?', 'The four extra digits, explained.'],
+          ['/guides/zip-code-vs-postal-code/', 'ZIP vs. postal code', 'Filling in international forms.'],
+        ].map(([h, t, d]) => (
+          <a href={h} class="rounded-xl border border-paper/15 p-5 no-underline transition hover:border-paper/40 hover:bg-paper/5">
+            <span class="block font-semibold text-paper">{t}</span>
+            <span class="mt-1 block text-sm text-paper/65">{d}</span>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <div class="mx-auto mt-16 max-w-4xl"><FAQ faqs={faqs} /></div>
+
+    <p class="mt-10 text-center text-xs text-ink-4">
+      {SITE.brand} is independent and not affiliated with USPS. Data: US Census Bureau &amp; USPS. <a href="/data-sources/" class="link">Methodology</a>
+    </p>
   </div>
 </Base>

@@ -1,0 +1,29 @@
+---
+import { ADS } from '../config/site';
+
+interface Props {
+  slot: 'top' | 'inContent' | 'sidebar';
+  class?: string;
+}
+const { slot, class: cls = '' } = Astro.props;
+const id = ADS.slots[slot];
+const enabled = !!(ADS.adsenseClient && id);
+const minH = slot === 'sidebar' ? 'min-h-[250px]' : 'min-h-[100px] sm:min-h-[90px]';
+---
+
+{enabled && (
+  <aside class={`my-8 ${cls}`} aria-label="Advertisement">
+    <p class="mb-1 text-center font-mono text-[0.62rem] uppercase tracking-[0.18em] text-ink-4">Advertisement</p>
+    <div class={`flex w-full items-center justify-center overflow-hidden ${minH}`}>
+      <ins
+        class="adsbygoogle"
+        style="display:block;width:100%"
+        data-ad-client={ADS.adsenseClient}
+        data-ad-slot={id}
+        data-ad-format={slot === 'sidebar' ? 'rectangle' : 'auto'}
+        data-full-width-responsive="true"
+      ></ins>
+    </div>
+    <script is:inline>(window.adsbygoogle = window.adsbygoogle || []).push({});</script>
+  </aside>
+)}

@@ -1,0 +1,55 @@
+---
+import type { RankRow } from '../lib/data';
+import { formatNumber, formatMoney, formatArea, citySlug } from '../lib/formatters';
+import { zipUrl, cityUrl, stateUrl } from '../lib/url';
+
+export type Metric = 'population' | 'income' | 'home_value' | 'density' | 'land_area';
+interface Props {
+  rows: RankRow[];
+  metric: Metric;
+  showState?: boolean;
+}
+const { rows, metric, showState = false } = Astro.props;
+
+const fmt: Record<Metric, (r: RankRow) => string> = {
+  population: (r) => formatNumber(r.population),
+  income: (r) => formatMoney(r.median_household_income),
+  home_value: (r) => formatMoney(r.median_home_value),
+  density: (r) => `${formatNumber(Math.round(r.population_density ?? 0))}/sq mi`,
+  land_area: (r) => formatArea(r.land_area_sqmi),
+};
+const head: Record<Metric, string> = {
+  population: 'Population',
+  income: 'Median income',
+  home_value: 'Home value',
+  density: 'Density',
+  land_area: 'Land area',
+};
+---
+
+<div class="card overflow-x-auto">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th scope="col" class="w-10">#</th>
+        <th scope="col">ZIP</th>
+        <th scope="col">City</th>
+        {showState && <th scope="col">State</th>}
+        <th scope="col" class="text-right">{head[metric]}</th>
+        {metric !== 'population' && <th scope="col" class="hidden text-right sm:table-cell">Population</th>}
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map((r, i) => (
+        <tr>
+          <td class="num text-ink-4">{i + 1}</td>
+          <td><a href={zipUrl(r.zip)} class="lz">{r.zip}</a></td>
+          <td><a href={cityUrl(citySlug(r.city, r.state))} class="lm">{r.city}</a>{!showState && r.county && <span class="hidden text-ink-4 md:inline"> · {r.county}</span>}</td>
+          {showState && <td><a href={stateUrl(r.state)} class="text-ink-3 no-underline hover:text-brand">{r.state}</a></td>}
+          <td class="num text-right font-medium text-ink">{fmt[metric](r)}</td>
+          {metric !== 'population' && <td class="num hidden text-right text-ink-3 sm:table-cell">{formatNumber(r.population)}</td>}
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>

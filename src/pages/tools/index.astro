@@ -1,0 +1,31 @@
+---
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import PageHeader from '../../components/PageHeader.astro';
+
+const tools = [
+  { href: '/search/', t: 'ZIP code lookup', d: 'Find any US ZIP code by number, city or state.' },
+  { href: '/what-is-my-zip-code/', t: 'What’s my ZIP code?', d: 'Detect the ZIP code for your current location in one tap.' },
+  { href: '/tools/zip-code-distance/', t: 'ZIP code distance calculator', d: 'Miles and kilometers between any two ZIP codes.' },
+  { href: '/tools/zip-code-radius/', t: 'ZIP code radius search', d: 'Every ZIP code within 1–100 miles, with CSV export.' },
+  { href: '/rankings/', t: 'ZIP code rankings', d: 'Richest, most expensive and most populated ZIP codes.' },
+  { href: '/states/', t: 'ZIP codes by state', d: 'Complete ZIP code lists for all 50 states and territories.' },
+];
+const title = 'Free ZIP Code Tools – Lookup, Distance, Radius & More';
+const description = 'Free US ZIP code tools: lookup, find your ZIP code, distance calculator, radius search and rankings. No sign-up required.';
+---
+
+<Base title={title} description={description}>
+  <div class="wrap pt-6">
+    <Breadcrumbs items={[{ name: 'Home', path: '/' }, { name: 'Tools', path: '/tools/' }]} />
+    <div class="mt-6"><PageHeader eyebrow="Tools" title="Free ZIP code tools" lede={description} /></div>
+    <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {tools.map((t) => (
+        <a href={t.href} class="card group p-6 no-underline transition hover:-translate-y-0.5 hover:shadow-lift">
+          <p class="font-display text-xl font-semibold text-ink group-hover:text-brand">{t.t}</p>
+          <p class="mt-2 text-sm text-ink-2">{t.d}</p>
+        </a>
+      ))}
+    </div>
+  </div>
+</Base>

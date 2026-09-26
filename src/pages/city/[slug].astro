@@ -1,188 +1,179 @@
 ---
-import fs from 'node:fs';
-import path from 'node:path';
 import Base from '../../layouts/Base.astro';
-import BreadcrumbSchema from '../../components/BreadcrumbSchema.astro';
-import ZipCard from '../../components/ZipCard.astro';
-import StatBlock from '../../components/StatBlock.astro';
-import AdSenseUnit from '../../components/AdSenseUnit.astro';
-import FAQSection from '../../components/FAQSection.astro';
-import SponsorBlock from '../../components/SponsorBlock.astro';
-import { formatNumber, citySlug, countySlug } from '../../lib/formatters';
-import { cityPageTitle, cityPageDescription } from '../../lib/seo';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import GeoMap from '../../components/GeoMap.astro';
+import FAQ from '../../components/FAQ.astro';
+import AdSlot from '../../components/AdSlot.astro';
+import Offers from '../../components/Offers.astro';
+import Stats from '../../components/Stats.astro';
+import ZipTable from '../../components/ZipTable.astro';
+import { getCities, getZips, getMeta, type CityInfo } from '../../lib/data';
+import { formatNumber, formatMoney, formatArea, getTimezoneName, getTimezoneAbbr, listJoin, countySlug, plural } from '../../lib/formatters';
+import { cityUrl, countyUrl, stateUrl, zipUrl, abs } from '../../lib/url';
+import { webPageSchema, clampDescription } from '../../lib/seo';
 
 export function getStaticPaths() {
-  const cityIndex = JSON.parse(
-    fs.readFileSync(path.join(process.cwd(), 'data', 'city_index.json'), 'utf-8')
-  );
-  return Object.entries(cityIndex).map(([key, info]: [string, any]) => {
-    const slug = citySlug(info.city, info.state);
-    return {
-      params: { slug },
-      props: { info },
-    };
-  });
+  return Object.entries(getCities()).map(([slug, info]) => ({ params: { slug }, props: { slug, info } }));
 }
 
-const { info } = Astro.props;
-const siteUrl = Astro.site?.origin || 'https://zipcodedetails.netlify.app';
+const { slug, info } = Astro.props as { slug: string; info: CityInfo };
+const meta = getMeta();
+const zips = getZips(info.zips);
+const n = zips.length;
+const std = zips.filter((z) => z.zip_type === 'STANDARD');
+const po = zips.filter((z) => z.zip_type === 'PO BOX');
+const path = cityUrl(slug);
+const name = `${info.city}, ${info.state}`;
+const single = n === 1;
+const tz = getTimezoneName(info.timezone);
+const primary = (std.length ? std : zips).slice().sort((a, b) => (b.population ?? 0) - (a.population ?? 0))[0];
 
-const title = cityPageTitle(info.city, info.state);
-const stateFull = info.state_full || info.state;
-const zipCount = info.zips?.length || 0;
-const description = cityPageDescription(info.city, stateFull, zipCount);
+const answer = single
+  ? `The ZIP code for ${info.city}, ${info.state_full} is ${zips[0].zip}${zips[0].zip_type === 'PO BOX' ? ' (a PO Box ZIP code)' : ''}. ${info.city} is in ${info.county || info.state_full}${info.timezone ? ` and uses ${tz}` : ''}.`
+  : `${info.city}, ${info.state_full} has ${n} ZIP codes: ${std.length} standard${po.length ? ` and ${po.length} PO Box` : ''}. ${primary ? `The most populous is ${primary.zip}.` : ''} ZIP codes in ${info.city} range from ${info.zips[0]} to ${info.zips[n - 1]}.`;
 
-const breadcrumbs = [
-  { name: 'Home', url: siteUrl },
-  { name: stateFull, url: `${siteUrl}/state/${info.state.toLowerCase()}` },
-  { name: `${info.city}, ${info.state}`, url: `${siteUrl}/city/${citySlug(info.city, info.state)}` },
+const title = single
+  ? `${name} ZIP Code: ${zips[0].zip} – Map, Population & Info`
+  : `${name} ZIP Codes – All ${n} ZIP Codes, Map & List`;
+const description = clampDescription(
+  single
+    ? `The ZIP code for ${info.city}, ${info.state_full} is ${zips[0].zip}. See the map, county, time zone, population and nearby cities.`
+    : `All ${n} ZIP codes in ${info.city}, ${info.state_full}: ${info.zips.slice(0, 6).join(', ')}${n > 6 ? ' and more' : ''}. Map, population, income and a sortable ZIP code list.`
+);
+
+const counties = info.counties.length ? info.counties : info.county ? [info.county] : [];
+const facts = [
+  { k: 'ZIP codes', v: String(n), sub: po.length ? `${std.length} standard · ${po.length} PO Box` : undefined },
+  ...(info.population ? [{ k: 'Population', v: formatNumber(info.population), sub: 'Sum of ZIP areas' }] : []),
+  ...(counties.length ? [{ k: counties.length > 1 ? 'Counties' : 'County', v: counties.length > 1 ? `${counties.length} counties` : counties[0], href: counties.length === 1 ? countyUrl(countySlug(counties[0], info.state)) : undefined }] : []),
+  { k: 'State', v: info.state_full, href: stateUrl(info.state) },
+  ...(info.timezone ? [{ k: 'Time zone', v: tz, sub: getTimezoneAbbr(info.timezone) }] : []),
+  ...(info.avg_household_income ? [{ k: 'Household income', v: formatMoney(info.avg_household_income), sub: 'Pop.-weighted ZIP median' }] : []),
+  ...(info.avg_home_value ? [{ k: 'Home value', v: formatMoney(info.avg_home_value), sub: 'Weighted ZIP median' }] : []),
+  ...(info.land_area_sqmi ? [{ k: 'Land area', v: formatArea(info.land_area_sqmi), sub: 'ZIP areas combined' }] : []),
 ];
 
-// Load zip data for this city
-const zipsDir = path.join(process.cwd(), 'data', 'zips');
-const cityZips: any[] = [];
-for (const z of (info.zips || [])) {
-  const fp = path.join(zipsDir, `${z}.json`);
-  try {
-    if (fs.existsSync(fp)) {
-      cityZips.push(JSON.parse(fs.readFileSync(fp, 'utf-8')));
-    }
-  } catch { /* skip */ }
-}
-
-// FAQ for city page
-const zipsList = zipCount > 0 ? info.zips.slice(0, 10).join(', ') : '';
 const faqs = [
   {
-    question: `What is the ZIP code for ${info.city}, ${info.state}?`,
-    answer: zipCount === 1
-      ? `The ZIP code for ${info.city}, ${stateFull} is ${info.zips[0]}.`
-      : `${info.city}, ${stateFull} has ${zipCount} ZIP codes: ${zipsList}${zipCount > 10 ? `, and ${zipCount - 10} more` : ''}.`,
+    question: `What is the ZIP code for ${name}?`,
+    answer: single
+      ? `The ZIP code for ${info.city}, ${info.state_full} is ${zips[0].zip}.`
+      : `${info.city} has ${n} ZIP codes: ${listJoin(info.zips.slice(0, 12))}${n > 12 ? `, plus ${n - 12} more listed on this page` : ''}. The right one depends on the street address.`,
   },
   {
-    question: `How many ZIP codes does ${info.city}, ${info.state} have?`,
-    answer: `${info.city}, ${stateFull} is served by ${zipCount} ZIP code${zipCount !== 1 ? 's' : ''}. All ZIP codes are listed on this page with their location details.`,
+    question: `How many ZIP codes does ${info.city} have?`,
+    answer: `${info.city}, ${info.state} is served by ${plural(n, 'ZIP code')}${po.length ? `, including ${plural(po.length, 'PO Box–only ZIP')}` : ''}.`,
   },
+  ...(counties.length
+    ? [{ question: `What county is ${name} in?`, answer: `${info.city} is in ${listJoin(counties)}, ${info.state_full}.` }]
+    : []),
+  ...(info.timezone
+    ? [{ question: `What time zone is ${info.city}, ${info.state} in?`, answer: `${info.city} is in the ${tz} zone (${info.timezone}).` }]
+    : []),
+  ...(info.population
+    ? [{ question: `What is the population of ${name}?`, answer: `The ZIP code areas serving ${info.city} have a combined population of about ${formatNumber(info.population)} (US Census Bureau). ZIP areas can extend beyond city limits, so this can differ from the official city population.` }]
+    : []),
   {
-    question: `What county is ${info.city}, ${info.state} in?`,
-    answer: info.county
-      ? `${info.city}, ${stateFull} is located in ${info.county}.`
-      : `County information for ${info.city} is not currently available.`,
-  },
-  {
-    question: `What state is ${info.city} in?`,
-    answer: `${info.city} is located in the state of ${stateFull} (${info.state}).`,
-  },
-  {
-    question: `Is ${info.city}, ${info.state} a good place to live?`,
-    answer: `This site provides ZIP code and geographic data for ${info.city}, ${stateFull}. For information about quality of life, cost of living, schools, and other community details, we recommend visiting local community resources and real estate websites for the ${info.city} area.`,
+    question: `Which ZIP code should I use for my address in ${info.city}?`,
+    answer: `Use the ZIP code assigned to your street address. ${single ? `In ${info.city} that is ${zips[0].zip}.` : `${info.city} has several ZIP codes, so check your exact address with the USPS ZIP code lookup.`} PO Box ZIP codes are only for post office boxes.`,
   },
 ];
 
-const faqSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: faqs.map((f) => ({
-    '@type': 'Question',
-    name: f.question,
-    acceptedAnswer: { '@type': 'Answer', text: f.answer },
-  })),
-};
+const crumbs = [
+  { name: 'Home', path: '/' },
+  { name: info.state_full, path: stateUrl(info.state) },
+  { name: info.city, path },
+];
 
-const placeSchema = {
+const citySchema = {
   '@context': 'https://schema.org',
   '@type': 'City',
-  name: `${info.city}, ${stateFull}`,
-  containedInPlace: {
-    '@type': 'State',
-    name: stateFull,
-    url: `${siteUrl}/state/${info.state.toLowerCase()}`,
-  },
-  url: `${siteUrl}/city/${citySlug(info.city, info.state)}`,
+  '@id': abs(path) + '#place',
+  name: `${info.city}, ${info.state}`,
+  url: abs(path),
+  geo: { '@type': 'GeoCoordinates', latitude: info.lat, longitude: info.lng },
+  address: { '@type': 'PostalAddress', addressLocality: info.city, addressRegion: info.state, addressCountry: 'US', postalCode: info.zips.join(', ') },
+  containedInPlace: { '@type': 'State', name: info.state_full, url: abs(stateUrl(info.state)) },
 };
+const points = zips.map((z) => ({ lat: z.lat, lng: z.lng, label: z.zip, href: zipUrl(z.zip) }));
 ---
 
-<Base title={title} description={description} jsonLd={[faqSchema, placeSchema]}>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <BreadcrumbSchema items={breadcrumbs} />
+<Base title={title} description={description} path={path} jsonLd={[citySchema, webPageSchema({ path, name: title, description, dateModified: meta.built, about: { '@id': abs(path) + '#place' } })]}>
+  <div class="wrap pt-6">
+    <Breadcrumbs items={crumbs} />
 
-    <div class="mb-8">
-      <h1 class="text-3xl sm:text-4xl font-bold text-slate-900">
-        {info.city}, {info.state} ZIP Codes
-      </h1>
-      <p class="text-slate-500 mt-2">
-        All ZIP codes serving <a href={`/state/${info.state.toLowerCase()}`} class="text-primary hover:underline">{info.city}, {stateFull}</a>
-      </p>
-    </div>
+    <div class="mt-6 grid gap-10 lg:grid-cols-[minmax(0,1fr)_24rem]">
+      <div class="min-w-0">
+        <header>
+          <p class="eyebrow">City ZIP codes · {info.state_full}</p>
+          <h1 class="mt-3 font-display text-[2rem] font-semibold leading-[1.1] sm:text-[2.75rem]">
+            {single ? `${name} ZIP Code` : `${name} ZIP Codes`}
+          </h1>
+          {single ? (
+            <p class="mt-4 flex flex-wrap items-center gap-3">
+              <a href={zipUrl(zips[0].zip)} class="zipcode rounded-lg border-2 border-ink px-3 py-1 text-3xl text-ink no-underline hover:border-brand hover:text-brand">{zips[0].zip}</a>
+              <span class="text-sm text-ink-3">{zips[0].zip_type === 'PO BOX' ? 'PO Box ZIP' : 'Standard ZIP'}</span>
+            </p>
+          ) : (
+            <div class="mt-4 flex flex-wrap gap-2">
+              {zips.slice(0, 18).map((z) => <a href={zipUrl(z.zip)} class="chip"><span class="zipcode text-ink">{z.zip}</span></a>)}
+              {n > 18 && <a href="#zip-list" class="chip">+{n - 18} more</a>}
+            </div>
+          )}
+          <p class="mt-5 max-w-2xl text-[1.05rem] leading-relaxed text-ink-2" data-answer>{answer}</p>
+        </header>
 
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-      <StatBlock label="ZIP Codes" value={formatNumber(zipCount)} />
-      <StatBlock label="County" value={info.county || 'N/A'} />
-    </div>
+        <div class="mt-8"><Stats items={facts} /></div>
 
-    {info.county && (
-      <div class="mb-6">
-        <a
-          href={`/county/${countySlug(info.county, info.state)}`}
-          class="inline-flex items-center gap-1.5 text-sm text-primary hover:underline font-medium"
-        >
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          View all ZIP codes in {info.county}
-        </a>
+        <div class="mt-8 lg:hidden">
+          <GeoMap lat={info.lat} lng={info.lng} zoom={11} points={points} title={`ZIP codes in ${name}`} />
+        </div>
+
+        <AdSlot slot="top" />
+
+        <section id="zip-list" class="mt-10 scroll-mt-24">
+          <h2 class="h-section">{single ? `ZIP code ${zips[0].zip} at a glance` : `All ${n} ZIP codes in ${name}`}</h2>
+          <p class="mt-2 text-sm text-ink-3">Tap a column to sort. Population and income are Census estimates for each ZIP area.</p>
+          <div class="mt-5"><ZipTable rows={zips} showCity={false} showCounty={counties.length > 1} caption={`ZIP codes in ${name}`} /></div>
+        </section>
+
+        {info.nearby?.length > 0 && (
+          <section class="mt-10">
+            <h2 class="h-section">Cities near {info.city}</h2>
+            <div class="mt-4 grid gap-2 sm:grid-cols-2">
+              {info.nearby.map((c) => (
+                <a href={cityUrl(c.slug)} class="flex items-center justify-between rounded-lg border border-line bg-surface px-4 py-3 no-underline transition hover:border-brand/40">
+                  <span class="font-medium text-ink">{c.city}, {info.state}</span>
+                  <span class="num text-sm text-ink-3">{c.distance_mi} mi</span>
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <div class="mt-12">
+          <Offers city={info.city} state={info.state} stateFull={info.state_full} lat={info.lat} lng={info.lng} />
+        </div>
+
+        <AdSlot slot="inContent" />
+
+        <div class="mt-12"><FAQ faqs={faqs} heading={`${name} ZIP code FAQ`} /></div>
       </div>
-    )}
 
-    <AdSenseUnit slot="city-top-leaderboard" format="horizontal" />
-
-    <section class="mt-8">
-      <h2 class="text-xl font-semibold text-slate-900 mb-4">
-        All {formatNumber(zipCount)} ZIP Codes in {info.city}, {info.state}
-      </h2>
-
-      {cityZips.length > 0 ? (
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {cityZips.sort((a, b) => a.zip.localeCompare(b.zip)).map((z) => (
-            <ZipCard zip={z.zip} city={z.city} state={z.state} county={z.county} />
-          ))}
+      <aside class="hidden lg:block">
+        <div class="sticky top-24 space-y-6">
+          <GeoMap lat={info.lat} lng={info.lng} zoom={11} points={points} title={`ZIP codes in ${name}`} aspect="aspect-square" />
+          <AdSlot slot="sidebar" class="!my-0" />
+          <nav class="card p-5" aria-label="Explore">
+            <p class="eyebrow">Explore</p>
+            <ul class="mt-3 space-y-2.5 text-sm">
+              {counties.map((c) => <li><a class="link" href={countyUrl(countySlug(c, info.state))}>ZIP codes in {c}</a></li>)}
+              <li><a class="link" href={stateUrl(info.state)}>All {info.state_full} ZIP codes</a></li>
+              <li><a class="link" href={`/tools/zip-code-radius/?zip=${info.zips[0]}&r=15`}>ZIP codes within 15 miles</a></li>
+            </ul>
+          </nav>
         </div>
-      ) : (
-        <div class="bg-white rounded-xl border border-slate-200 p-8">
-          <p class="text-slate-500 text-sm mb-4">
-            Detailed ZIP code data for {info.city} will be available after the full data build.
-          </p>
-          <div class="flex flex-wrap gap-2">
-            {(info.zips || []).map((z: string) => (
-              <a href={`/zip/${z}`} class="inline-flex items-center bg-primary/5 text-primary text-sm font-semibold px-3 py-1 rounded-full hover:bg-primary/10 transition-colors">
-                {z}
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
-    </section>
-
-    <AdSenseUnit slot="city-bottom-leaderboard" format="horizontal" />
-
-    <SponsorBlock city={info.city} state={info.state} stateFull={stateFull} />
-
-    <FAQSection faqs={faqs} />
-
-    <div class="mt-8 text-center">
-      <a
-        href={`/state/${info.state.toLowerCase()}`}
-        class="inline-flex items-center gap-2 text-primary font-medium text-sm hover:underline"
-      >
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-        View all ZIP codes in {stateFull}
-      </a>
-    </div>
-
-    <div class="mt-12 text-center">
-      <p class="text-xs text-slate-400">
-        Data sourced from <a href="https://www.census.gov/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">US Census Bureau</a> and <a href="https://postalpro.usps.com/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">USPS</a>. This site is for informational purposes only.
-      </p>
+      </aside>
     </div>
   </div>
 </Base>

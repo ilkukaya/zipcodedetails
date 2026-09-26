@@ -1,94 +1,101 @@
 ---
-const states = [
-  { name: 'California', abbr: 'ca' },
-  { name: 'Texas', abbr: 'tx' },
-  { name: 'Florida', abbr: 'fl' },
-  { name: 'New York', abbr: 'ny' },
-  { name: 'Illinois', abbr: 'il' },
-  { name: 'Pennsylvania', abbr: 'pa' },
-  { name: 'Ohio', abbr: 'oh' },
-  { name: 'Georgia', abbr: 'ga' },
-  { name: 'North Carolina', abbr: 'nc' },
-  { name: 'Michigan', abbr: 'mi' },
-];
+import Logo from './Logo.astro';
+import { getStates, getMeta } from '../lib/data';
+import { stateUrl } from '../lib/url';
+import { SITE } from '../config/site';
 
-const cities = [
-  { name: 'New York', slug: 'new-york-ny' },
-  { name: 'Los Angeles', slug: 'los-angeles-ca' },
-  { name: 'Chicago', slug: 'chicago-il' },
-  { name: 'Houston', slug: 'houston-tx' },
-  { name: 'Phoenix', slug: 'phoenix-az' },
-  { name: 'Philadelphia', slug: 'philadelphia-pa' },
-  { name: 'San Antonio', slug: 'san-antonio-tx' },
-  { name: 'San Diego', slug: 'san-diego-ca' },
-  { name: 'Dallas', slug: 'dallas-tx' },
-  { name: 'Austin', slug: 'austin-tx' },
+const states = Object.entries(getStates())
+  .filter(([abbr]) => abbr.length === 2)
+  .sort((a, b) => a[1].name.localeCompare(b[1].name));
+const meta = getMeta();
+const year = new Date().getFullYear();
+
+const cols = [
+  {
+    title: 'Look up',
+    links: [
+      ['/search/', 'ZIP code lookup'],
+      ['/what-is-my-zip-code/', 'What’s my ZIP code?'],
+      ['/tools/zip-code-distance/', 'Distance between ZIP codes'],
+      ['/tools/zip-code-radius/', 'ZIP codes within a radius'],
+      ['/states/', 'Browse by state'],
+    ],
+  },
+  {
+    title: 'Rankings',
+    links: [
+      ['/rankings/richest-zip-codes/', 'Richest ZIP codes'],
+      ['/rankings/most-expensive-zip-codes/', 'Most expensive ZIP codes'],
+      ['/rankings/most-populated-zip-codes/', 'Most populated ZIP codes'],
+      ['/rankings/most-densely-populated-zip-codes/', 'Densest ZIP codes'],
+      ['/rankings/largest-zip-codes/', 'Largest ZIP codes by area'],
+    ],
+  },
+  {
+    title: 'Learn',
+    links: [
+      ['/guides/what-is-a-zip-code/', 'What is a ZIP code?'],
+      ['/guides/us-zip-code-format/', 'ZIP code format'],
+      ['/guides/zip-code-vs-postal-code/', 'ZIP vs. postal code'],
+      ['/guides/how-to-find-your-zip-code/', 'How to find your ZIP'],
+      ['/guides/what-is-zip-plus-4/', 'What is ZIP+4?'],
+    ],
+  },
+  {
+    title: 'Site',
+    links: [
+      ['/about/', 'About'],
+      ['/data-sources/', 'Data sources & methodology'],
+      ['/contact/', 'Contact'],
+      ['/privacy/', 'Privacy policy'],
+      ['/terms/', 'Terms of use'],
+      ['/affiliate-disclosure/', 'Affiliate disclosure'],
+    ],
+  },
 ];
 ---
 
-<footer class="bg-slate-900 text-slate-400 mt-16">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+<footer class="mt-20 bg-ink text-paper/75">
+  <div class="airmail h-1 w-full opacity-90" aria-hidden="true"></div>
+  <div class="wrap py-14">
+    <div class="grid gap-10 lg:grid-cols-[1.2fr_2fr]">
       <div>
-        <h3 class="text-white font-semibold text-sm uppercase tracking-wider mb-4">Popular States</h3>
-        <ul class="space-y-2">
-          {states.map((s) => (
-            <li>
-              <a href={`/state/${s.abbr}`} class="text-sm hover:text-white transition-colors">
-                {s.name}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div>
-        <h3 class="text-white font-semibold text-sm uppercase tracking-wider mb-4">Popular Cities</h3>
-        <ul class="space-y-2">
-          {cities.map((c) => (
-            <li>
-              <a href={`/city/${c.slug}`} class="text-sm hover:text-white transition-colors">
-                {c.name}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div>
-        <h3 class="text-white font-semibold text-sm uppercase tracking-wider mb-4">Resources</h3>
-        <ul class="space-y-2">
-          <li><a href="/about" class="text-sm hover:text-white transition-colors">About Us</a></li>
-          <li><a href="/search" class="text-sm hover:text-white transition-colors">Search ZIP Codes</a></li>
-          <li><a href="/privacy" class="text-sm hover:text-white transition-colors">Privacy Policy</a></li>
-          <li><a href="/terms" class="text-sm hover:text-white transition-colors">Terms of Use</a></li>
-        </ul>
-      </div>
-
-      <div>
-        <a href="/" class="flex items-center gap-2 no-underline">
-          <svg class="w-6 h-6 text-primary-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-            <circle cx="12" cy="10" r="3" />
-          </svg>
-          <span class="text-white font-bold">ZIPCodeDetails</span>
-        </a>
-        <p class="text-xs mt-3 leading-relaxed">
-          Free ZIP code lookup and reference data for the United States. Search by ZIP code, city, or state.
+        <a href="/" class="no-underline" aria-label="ZIPCodeDetails home"><Logo inverted /></a>
+        <p class="mt-4 max-w-sm text-sm leading-relaxed">
+          A free, independent reference for {meta.zip_count.toLocaleString('en-US')} US ZIP codes —
+          built on public data from the US Census Bureau and USPS.
         </p>
-        <p class="text-xs mt-3 leading-relaxed text-slate-500">
-          This site is for informational purposes only. For official address validation, please use <a href="https://www.usps.com/" rel="nofollow noopener" target="_blank" class="underline hover:text-slate-300">USPS.com</a>.
+        <p class="mt-3 max-w-sm text-xs leading-relaxed text-paper/55">
+          Not affiliated with the United States Postal Service. For official address validation use
+          <a href="https://tools.usps.com/zip-code-lookup.htm" rel="noopener" target="_blank" class="text-paper/80 underline underline-offset-2 hover:text-white">USPS.com</a>.
         </p>
+      </div>
+      <div class="grid grid-cols-2 gap-8 sm:grid-cols-4">
+        {cols.map((c) => (
+          <div>
+            <p class="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-paper/50">{c.title}</p>
+            <ul class="mt-3 space-y-2 text-sm">
+              {c.links.map(([href, label]) => (
+                <li><a href={href} class="lf">{label}</a></li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </div>
     </div>
 
-    <div class="border-t border-slate-800 mt-10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-      <p class="text-xs text-slate-500">
-        Data sourced from <a href="https://www.census.gov/" rel="nofollow noopener" target="_blank" class="underline hover:text-slate-300">US Census Bureau</a> and <a href="https://postalpro.usps.com/" rel="nofollow noopener" target="_blank" class="underline hover:text-slate-300">USPS</a> &middot; Free to use
-      </p>
-      <p class="text-xs text-slate-500">
-        &copy; {new Date().getFullYear()} ZIPCodeDetails.com &middot; <a href="/privacy" class="underline hover:text-slate-300">Privacy</a> &middot; <a href="/terms" class="underline hover:text-slate-300">Terms</a>
-      </p>
+    <div class="mt-12 border-t border-paper/10 pt-8">
+      <p class="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-paper/50">ZIP codes by state</p>
+      <ul class="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[0.82rem] sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+        {states.map(([abbr, s]) => (
+          <li><a href={stateUrl(abbr)} class="lf">{s.name}</a></li>
+        ))}
+      </ul>
+    </div>
+
+    <div class="mt-10 flex flex-col gap-2 border-t border-paper/10 pt-6 text-xs text-paper/50 sm:flex-row sm:items-center sm:justify-between">
+      <p>© {year} {SITE.brand}. Data: US Census Bureau &amp; USPS (public domain).</p>
+      <p>Last updated {meta.built}</p>
     </div>
   </div>
 </footer>

@@ -1,0 +1,41 @@
+---
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import { getStates, getMeta } from '../../lib/data';
+import { formatNumber } from '../../lib/formatters';
+import { stateUrl } from '../../lib/url';
+
+const meta = getMeta();
+const all = Object.entries(getStates()).sort((a, b) => a[1].name.localeCompare(b[1].name));
+const TERR = new Set(['PR', 'VI', 'GU', 'AS', 'MP', 'FM', 'MH', 'PW']);
+const states = all.filter(([a]) => !TERR.has(a));
+const territories = all.filter(([a]) => TERR.has(a));
+const title = 'US ZIP Codes by State – All 50 States, DC & Territories';
+const description = `Browse all ${formatNumber(meta.zip_count)} US ZIP codes by state. See how many ZIP codes each state has, its ZIP code range, cities and counties.`;
+---
+
+<Base title={title} description={description}>
+  <div class="wrap pt-6">
+    <Breadcrumbs items={[{ name: 'Home', path: '/' }, { name: 'States', path: '/states/' }]} />
+    <div class="mt-6"><PageHeader eyebrow="Browse" title="ZIP codes by state" lede={description} /></div>
+
+    <div class="card mt-8 overflow-x-auto">
+      <table class="data-table">
+        <thead><tr><th>State</th><th>Abbr.</th><th class="text-right">ZIP codes</th><th class="hidden sm:table-cell">ZIP range</th><th class="hidden text-right md:table-cell">Cities</th><th class="hidden text-right md:table-cell">Counties</th></tr></thead>
+        <tbody>
+          {[...states, ...territories].map(([abbr, s]) => (
+            <tr>
+              <td><a href={stateUrl(abbr)} class="font-medium text-ink no-underline hover:text-brand hover:underline">{s.name}</a>{TERR.has(abbr) && <span class="ml-2 text-xs text-ink-4">territory</span>}</td>
+              <td class="font-mono text-ink-3">{abbr}</td>
+              <td class="num text-right">{formatNumber(s.zip_count)}</td>
+              <td class="hidden font-mono text-ink-3 sm:table-cell">{s.zip_range[0]}–{s.zip_range[1]}</td>
+              <td class="num hidden text-right md:table-cell">{formatNumber(s.city_count)}</td>
+              <td class="num hidden text-right md:table-cell">{formatNumber(s.county_count)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</Base>

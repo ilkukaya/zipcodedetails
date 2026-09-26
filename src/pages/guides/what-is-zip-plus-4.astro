@@ -1,0 +1,33 @@
+---
+import Guide from '../../layouts/Guide.astro';
+const faqs = [
+  { question: 'Do I have to use ZIP+4?', answer: 'No. Five digits are enough for personal mail. ZIP+4 is mainly useful for businesses that send bulk mail, because correctly coded mail qualifies for postage discounts.' },
+  { question: 'How do I find my ZIP+4 code?', answer: 'Enter your street address in the USPS ZIP code lookup at tools.usps.com. It returns the standardized address with the full nine-digit ZIP code.' },
+  { question: 'Does my ZIP+4 ever change?', answer: 'It can. USPS reassigns +4 codes when delivery routes change, so businesses re-verify mailing lists regularly.' },
+  { question: 'Is ZIP+4 the same as the 9-digit ZIP code?', answer: 'Yes. “ZIP+4”, “9-digit ZIP” and “ZIP code plus four” all mean the five-digit ZIP followed by four additional digits.' },
+];
+---
+
+<Guide slug="what-is-zip-plus-4" description="ZIP+4 adds four digits to a ZIP code to pinpoint a block, building or PO box group. Learn what the digits mean, when to use them and how to find yours." faqs={faqs}>
+  <h1>What is ZIP+4?</h1>
+  <p class="lead" data-answer><strong>ZIP+4</strong> is a nine-digit ZIP code: the regular five-digit ZIP, a hyphen, and four extra digits (for example <code>90210-1234</code>). The extra digits identify a small delivery segment — such as one side of a city block, a single building, a floor, or a group of PO boxes. USPS introduced ZIP+4 in 1983.</p>
+
+  <h2>What the four extra digits mean</h2>
+  <ul>
+    <li><strong>Digits 6–7: the sector</strong> — a few blocks, a large building, or a cluster of PO boxes.</li>
+    <li><strong>Digits 8–9: the segment</strong> — one side of a street between intersections, a floor, a department, or a specific range of boxes.</li>
+  </ul>
+
+  <h2>When should you use it?</h2>
+  <ul>
+    <li><strong>Personal mail:</strong> optional. Five digits get your letter delivered.</li>
+    <li><strong>Business and bulk mail:</strong> recommended. Barcoded mail with valid ZIP+4 codes qualifies for automation discounts.</li>
+    <li><strong>Forms and checkout pages:</strong> accept both formats, and store ZIP codes as text so leading zeros survive.</li>
+  </ul>
+
+  <h2>How to find a ZIP+4</h2>
+  <p>The +4 depends on the exact street address, so you need the address itself. Use the official <a href="https://tools.usps.com/zip-code-lookup.htm" rel="noopener" target="_blank">USPS ZIP code lookup</a>. To find the five-digit ZIP for a place, use our <a href="/search/">ZIP code lookup</a> or <a href="/what-is-my-zip-code/">What’s my ZIP code?</a>.</p>
+
+  <h2>Delivery point barcodes</h2>
+  <p>USPS goes one step further with an 11-digit <em>delivery point</em> code — ZIP+4 plus two digits from the street number — encoded in the Intelligent Mail barcode printed on most business mail. You never need to write it by hand.</p>
+</Guide>

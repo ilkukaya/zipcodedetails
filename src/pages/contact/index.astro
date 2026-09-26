@@ -1,0 +1,40 @@
+---
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import { SITE } from '../../config/site';
+const input = 'mt-2 w-full rounded-lg border border-line-strong bg-surface px-4 py-3 text-base text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/15';
+---
+
+<Base title="Contact ZIPCodeDetails" description="Questions, corrections or partnership inquiries? Send a message to the ZIPCodeDetails team." path="/contact/">
+  <div class="wrap pt-6">
+    <Breadcrumbs items={[{ name: 'Home', path: '/' }, { name: 'Contact', path: '/contact/' }]} />
+    <div class="mt-6"><PageHeader eyebrow="Contact" title="Get in touch" lede="Found an error, have a data question, or want to partner with us? Send a message and we’ll reply by email." /></div>
+
+    <div class="mt-8 grid gap-10 lg:grid-cols-[minmax(0,40rem)_1fr]">
+      <form name="contact" method="POST" action="/contact/thanks/" data-netlify="true" netlify-honeypot="company" class="card space-y-5 p-6">
+        <input type="hidden" name="form-name" value="contact" />
+        <p class="hidden"><label>Leave empty <input name="company" /></label></p>
+        <label class="block"><span class="text-sm font-medium text-ink">Name</span><input name="name" required autocomplete="name" class={input} /></label>
+        <label class="block"><span class="text-sm font-medium text-ink">Email</span><input name="email" type="email" required autocomplete="email" class={input} /></label>
+        <label class="block">
+          <span class="text-sm font-medium text-ink">Topic</span>
+          <select name="topic" class={input}>
+            <option>Data correction</option>
+            <option>General question</option>
+            <option>Advertising / partnership</option>
+            <option>Other</option>
+          </select>
+        </label>
+        <label class="block"><span class="text-sm font-medium text-ink">Message</span><textarea name="message" rows="6" required class={input}></textarea></label>
+        <button type="submit" class="btn-primary h-12 px-6">Send message</button>
+        <p class="text-xs text-ink-3">We use your email only to reply. See our <a href="/privacy/" class="link">privacy policy</a>.</p>
+      </form>
+      <div class="space-y-4 text-sm text-ink-2">
+        <p><strong class="text-ink">Looking for a ZIP code?</strong> Try the <a href="/search/" class="link">ZIP code lookup</a>.</p>
+        <p><strong class="text-ink">Mail or package problem?</strong> We are not the Postal Service. Contact <a href="https://www.usps.com/help/" target="_blank" rel="noopener" class="link">USPS customer support</a>.</p>
+        {SITE.contactEmail && <p><strong class="text-ink">Email:</strong> <a href={`mailto:${SITE.contactEmail}`} class="link">{SITE.contactEmail}</a></p>}
+      </div>
+    </div>
+  </div>
+</Base>

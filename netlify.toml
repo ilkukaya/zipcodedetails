@@ -1,51 +1,55 @@
 [build]
-  # ALL builds and deploys are handled by GitHub Actions.
-  # Netlify should NEVER build on its own — it would deploy with empty data.
-  # The ignore command exits 0 to cancel any auto-triggered builds.
+  # ALL builds and deploys are handled by GitHub Actions (.github/workflows/build-and-deploy.yml).
+  # Netlify must never build on its own — the ignore command cancels auto-triggered builds.
   ignore = "exit 0"
   command = "echo 'This site is deployed via GitHub Actions only' && exit 0"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20"
-  SITE_URL = "https://zipcodedetails.netlify.app"
 
-# Security and performance headers
+# ── Security & performance headers ─────────────────────────────
 [[headers]]
   for = "/*"
   [headers.values]
-    X-Frame-Options = "DENY"
+    X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    X-XSS-Protection = "1; mode=block"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(self), interest-cohort=()"
 
+# Hashed build assets never change
 [[headers]]
-  for = "/*.css"
+  for = "/_astro/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
-  for = "/*.js"
+  for = "/zip-index.json"
   [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
 
 [[headers]]
-  for = "/*.svg"
+  for = "/*.png"
   [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+    Cache-Control = "public, max-age=604800"
 
 [[headers]]
-  for = "/*.json"
+  for = "/favicon*"
   [headers.values]
-    Cache-Control = "public, max-age=86400"
+    Cache-Control = "public, max-age=604800"
 
 [[headers]]
   for = "/sitemap*.xml"
   [headers.values]
-    Cache-Control = "public, max-age=86400"
+    Cache-Control = "public, max-age=3600"
 
-# URL redirects for common variations
+[[headers]]
+  for = "/llms*.txt"
+  [headers.values]
+    Content-Type = "text/plain; charset=utf-8"
+
+# ── Redirects for common URL variations ────────────────────────
 [[redirects]]
   from = "/zipcode/*"
   to = "/zip/:splat"
@@ -62,8 +66,8 @@
   status = 301
 
 [[redirects]]
-  from = "/states/*"
-  to = "/state/:splat"
+  from = "/states/:state"
+  to = "/state/:state/"
   status = 301
 
 [[redirects]]
@@ -71,14 +75,12 @@
   to = "/city/:splat"
   status = 301
 
-# Sitemap redirect
 [[redirects]]
-  from = "/sitemap.xml"
-  to = "/sitemap-index.xml"
+  from = "/tools/zip-code-distance-calculator/"
+  to = "/tools/zip-code-distance/"
   status = 301
 
-# 404 fallback — must be last
 [[redirects]]
-  from = "/*"
-  to = "/404.html"
-  status = 404
+  from = "/my-zip-code/"
+  to = "/what-is-my-zip-code/"
+  status = 301

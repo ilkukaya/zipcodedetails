@@ -1,5 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
-  <rect width="32" height="32" rx="6" fill="#1d4ed8"/>
-  <path d="M16 6C12.13 6 9 9.13 9 13c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="white"/>
-  <circle cx="16" cy="13" r="3" fill="#1d4ed8"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#142033"/><text x="32" y="41" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="26" font-weight="700" text-anchor="middle" fill="#F6F4EE" letter-spacing="-1">ZIP</text></svg>

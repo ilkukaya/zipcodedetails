@@ -1,65 +1,25 @@
 ---
 import Base from '../../layouts/Base.astro';
-import BreadcrumbSchema from '../../components/BreadcrumbSchema.astro';
-import AdSenseUnit from '../../components/AdSenseUnit.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import { GUIDES } from '../../lib/guides';
 
-const title = 'ZIP Code Guides — Learn About US ZIP Codes | ZIPCodeDetails.com';
-const description = 'Free guides about US ZIP codes. Learn how to find your ZIP code, understand ZIP code formats, and explore postal code systems.';
-
-const siteUrl = Astro.site?.origin || 'https://zipcodedetails.netlify.app';
-const breadcrumbs = [
-  { name: 'Home', url: siteUrl },
-  { name: 'Guides', url: `${siteUrl}/guides` },
-];
-
-const guides = [
-  {
-    slug: 'how-to-find-your-zip-code',
-    title: 'How to Find Your ZIP Code',
-    excerpt: 'Multiple easy methods to find any US ZIP code by address, city, or location.',
-  },
-  {
-    slug: 'what-is-a-zip-code',
-    title: 'What Is a ZIP Code? Complete Guide',
-    excerpt: 'Everything you need to know about the US ZIP code system — history, format, and how it works.',
-  },
-  {
-    slug: 'zip-code-vs-postal-code',
-    title: 'ZIP Code vs Postal Code — What\'s the Difference?',
-    excerpt: 'Understanding the difference between US ZIP codes and international postal codes.',
-  },
-  {
-    slug: 'us-zip-code-format',
-    title: 'US ZIP Code Format Explained (5-Digit & ZIP+4)',
-    excerpt: 'A complete breakdown of the US ZIP code numbering system and what each digit means.',
-  },
-];
+const title = 'ZIP Code Guides – How ZIP Codes Work';
+const description = 'Plain-English guides to US ZIP codes: what they are, what each digit means, ZIP+4, and how to find your own.';
 ---
 
 <Base title={title} description={description}>
-  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <BreadcrumbSchema items={breadcrumbs} />
-
-    <div class="mb-10">
-      <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">ZIP Code Guides</h1>
-      <p class="text-slate-500 text-lg">
-        Learn everything about US ZIP codes — how to find them, how they work, and what they mean.
-      </p>
-    </div>
-
-    <div class="space-y-6">
-      {guides.map((g) => (
-        <a href={`/guides/${g.slug}`} class="block bg-white rounded-xl border border-slate-200 p-6 hover:shadow-md hover:border-primary/30 transition-all no-underline group">
-          <h2 class="text-xl font-semibold text-slate-900 group-hover:text-primary transition-colors mb-2">{g.title}</h2>
-          <p class="text-slate-500 text-sm">{g.excerpt}</p>
-          <span class="inline-flex items-center gap-1 text-primary text-sm font-medium mt-3">
-            Read guide
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-          </span>
+  <div class="wrap pt-6">
+    <Breadcrumbs items={[{ name: 'Home', path: '/' }, { name: 'Guides', path: '/guides/' }]} />
+    <div class="mt-6"><PageHeader eyebrow="Guides" title="ZIP codes, decoded" lede={description} /></div>
+    <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {GUIDES.map((g) => (
+        <a href={`/guides/${g.slug}/`} class="card group p-6 no-underline transition hover:-translate-y-0.5 hover:shadow-lift">
+          <h2 class="font-display text-xl font-semibold text-ink group-hover:text-brand">{g.short}</h2>
+          <p class="mt-2 text-sm text-ink-2">{g.excerpt}</p>
+          <span class="mt-4 inline-block text-sm font-semibold text-brand">Read guide →</span>
         </a>
       ))}
     </div>
-
-    <AdSenseUnit slot="guides-bottom" format="horizontal" />
   </div>
 </Base>
