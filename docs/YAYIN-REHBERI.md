@@ -9,21 +9,27 @@ Site otomatik olarak yeniden yayınlanır.
 
 ## Ayarları nereye gireceğim? (tek yer)
 
-1. GitHub'da depoyu açın: `github.com/ilkukaya/zipcodedetails`
-2. **Settings → Secrets and variables → Actions → Variables** sekmesi
-3. **New repository variable** → Ad (ör. `ADSENSE_CLIENT`) ve Değer (ör. `ca-pub-123…`) → Kaydet
-4. **Actions** sekmesi → **Build and Deploy** → **Run workflow** (≈30–40 dk sonra canlıda)
+Site artık **Netlify'ın kendi sunucularında** derleniyor. Tüm ayarlar Netlify'da:
+
+1. https://app.netlify.com/projects/zipcodedetails → **Project configuration → Environment variables**
+2. **Add a variable** → Anahtar (ör. `ADSENSE_CLIENT`) ve Değer (ör. `ca-pub-123…`) → Kaydet
+3. **Deploys** sekmesi → **Trigger deploy → Deploy project** (≈10 dk sonra canlıda)
 
 > Değişken boş bırakılırsa o özellik sitede görünmez; hiçbir şey bozulmaz.
+> Bu adımları Claude'dan da isteyebilirsiniz: kimliği (ID) mesajla gönderin, o eklesin.
 
----
+### Tek seferlik: GitHub'ı Netlify'a bağlayın (otomatik yayın için)
+Netlify → **Project configuration → Build & deploy → Continuous deployment → Link repository**
+→ GitHub → `ilkukaya/zipcodedetails` → dal: `main`. Bundan sonra `main`'e yapılan her
+değişiklik otomatik yayınlanır. (Derleme ayarları `netlify.toml` dosyasından gelir, bir
+şey değiştirmenize gerek yok.)
 
 ## 1. Hafta: Temeller (hepsi ücretsiz)
 
 ### ✅ Google Search Console (en önemli adım)
 1. https://search.google.com/search-console → **Mülk ekle → URL öneki** → site adresiniz
 2. Doğrulama yöntemi **HTML etiketi** → `content="…"` içindeki kodu kopyalayın
-3. GitHub Variable: `GOOGLE_SITE_VERIFICATION` = kopyaladığınız kod → workflow'u çalıştırın
+3. Netlify değişkeni: `GOOGLE_SITE_VERIFICATION` = kopyaladığınız kod → yeniden deploy
 4. Doğrulayın → **Site haritaları** → `sitemap-index.xml` gönderin
 
 ### ✅ Bing Webmaster Tools (ChatGPT/Copilot aramaları da Bing kullanır)
@@ -32,13 +38,13 @@ Site otomatik olarak yeniden yayınlanır.
 2. Sitemap gönderin. IndexNow zaten her deploy'da otomatik bildiriyor.
 
 ### ✅ Analitik (birini seçin)
-- **Google Analytics 4** (ücretsiz): Mülk oluştur → "G-XXXX" ölçüm kimliği → Variable `GA4_ID`
-- **Cloudflare Web Analytics** (ücretsiz, çerezsiz): Token → Variable `CF_ANALYTICS_TOKEN`
+- **Google Analytics 4** (ücretsiz): Mülk oluştur → "G-XXXX" ölçüm kimliği → Netlify değişkeni `GA4_ID`
+- **Cloudflare Web Analytics** (ücretsiz, çerezsiz): Token → Netlify değişkeni `CF_ANALYTICS_TOKEN`
 
 ### ✅ İletişim formu
 Netlify panelinde **Forms** özelliğini açın (bizim tarafımızdan açıldı; açık değilse
 Project configuration → Forms → Enable). Gelen mesajlar Netlify → Forms'ta görünür.
-İsterseniz Variable `CONTACT_EMAIL` ile sayfada e-posta da gösterilir.
+İsterseniz Netlify değişkeni `CONTACT_EMAIL` ile sayfada e-posta da gösterilir.
 
 ---
 
@@ -50,7 +56,7 @@ adınız çok daha iyidir.
 1. Alan adını alın (Cloudflare Registrar / Namecheap / Porkbun — maliyet fiyatına)
 2. Netlify → Project → **Domain management → Add a domain** → talimatları izleyin
    (DNS kayıtları; HTTPS sertifikası otomatik ve ücretsiz)
-3. GitHub Variable: `SITE_URL` = `https://sizin-alanadiniz.com` → workflow'u çalıştırın
+3. Netlify değişkeni: `SITE_URL` = `https://sizin-alanadiniz.com` → yeniden deploy
    (tüm canonical, sitemap, schema adresleri otomatik güncellenir)
 4. Search Console'a yeni alan adını ekleyin ve sitemap'i tekrar gönderin
 
@@ -60,11 +66,11 @@ adınız çok daha iyidir.
 
 ### Google AdSense
 1. https://adsense.google.com → site adresinizi ekleyin
-2. Size verilen yayıncı kimliği `ca-pub-XXXXXXXXXXXXXXXX` → Variable `ADSENSE_CLIENT`
-   → workflow'u çalıştırın. Bu, doğrulama kodunu ve **ads.txt** dosyasını otomatik ekler.
+2. Size verilen yayıncı kimliği `ca-pub-XXXXXXXXXXXXXXXX` → Netlify değişkeni `ADSENSE_CLIENT`
+   → yeniden deploy. Bu, doğrulama kodunu ve **ads.txt** dosyasını otomatik ekler.
 3. AdSense'te "Siteyi incelemeye gönder". Onay genelde 1–4 hafta sürer.
 4. **Onaylandıktan sonra:** AdSense → Reklamlar → **Reklam birimine göre** → 3 adet
-   "Görüntülü reklam" oluşturun ve kimliklerini girin:
+   "Görüntülü reklam" oluşturun ve kimliklerini Netlify değişkeni olarak girin:
    - `ADSENSE_SLOT_TOP` (sayfa üstü), `ADSENSE_SLOT_IN_CONTENT` (içerik arası),
      `ADSENSE_SLOT_SIDEBAR` (masaüstü yan kolon)
    - Alternatif: yalnızca **Otomatik reklamlar**ı açabilirsiniz (slot girmeden).
@@ -83,7 +89,7 @@ adınız çok daha iyidir.
 ## 4. Affiliate (ortaklık) geliri
 
 Sitede ZIP ve şehir sayfalarında **"Moving to …?"** bölümü hazır. Aşağıdaki
-programlardan onay aldıkça bağlantı şablonunu Variable olarak girmeniz yeterli;
+programlardan onay aldıkça bağlantı şablonunu Netlify değişkeni olarak girmeniz yeterli;
 kart otomatik olarak görünür. Şablonlarda şu yer tutucular kullanılabilir:
 `{zip} {city} {state} {stateFull} {lat} {lng} {q}`
 
@@ -109,13 +115,14 @@ kart otomatik olarak görünür. Şablonlarda şu yer tutucular kullanılabilir:
   şemaları ve robots.txt'te yapay zekâ botlarına izin hazır.
 - **Paylaşılabilir içerik**: "Richest ZIP codes", "Most expensive ZIP codes" listelerini
   Reddit (r/dataisbeautiful, eyalet alt forumları), Pinterest ve X'te paylaşın.
-- **Pinterest** doğrulaması: Variable `PINTEREST_VERIFICATION`.
-- Büyük içerik değişikliğinden sonra: Actions → Run workflow → **Submit ALL URLs** işaretli.
+- **Pinterest** doğrulaması: Netlify değişkeni `PINTEREST_VERIFICATION`.
+- Büyük içerik değişikliğinden sonra: GitHub → Actions → Build and Deploy → Run workflow → **Submit ALL URLs** işaretli (IndexNow).
 
 ---
 
 ## Sorun giderme
 
-- **Deploy başarısız**: GitHub → Actions → kırmızı çalışmaya tıklayın; loglar oradadır.
-- **Değişiklik görünmüyor**: Tarayıcıda Ctrl+F5; deploy ~30–40 dk sürer.
-- **Netlify gizli anahtarları**: `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID` Secrets'ta kalmalı.
+- **Deploy başarısız**: Netlify → Deploys → başarısız deploy'a tıklayın; log oradadır.
+- **Değişiklik görünmüyor**: Tarayıcıda Ctrl+F5; deploy ~10 dk sürer.
+- **GitHub'daki eski `NETLIFY_AUTH_TOKEN`** süresi dolmuş durumda; artık gerekli değil.
+  (İsterseniz yenileyip GitHub Variable `DEPLOY_WITH_ACTIONS=true` ile Actions'tan da deploy edebilirsiniz.)

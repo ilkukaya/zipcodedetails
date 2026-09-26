@@ -1,12 +1,13 @@
 [build]
-  # ALL builds and deploys are handled by GitHub Actions (.github/workflows/build-and-deploy.yml).
-  # Netlify must never build on its own — the ignore command cancels auto-triggered builds.
-  ignore = "exit 0"
-  command = "echo 'This site is deployed via GitHub Actions only' && exit 0"
+  # Netlify builds the whole site: data pipeline (from data/pseo_zipcodes_full.json.gz)
+  # then Astro. Python packages from requirements.txt are installed automatically.
+  command = "python3 scripts/build_data.py && npx astro build"
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "22"
+  PYTHON_VERSION = "3.11"
+  NODE_OPTIONS = "--max-old-space-size=6144"
 
 # ── Security & performance headers ─────────────────────────────
 [[headers]]

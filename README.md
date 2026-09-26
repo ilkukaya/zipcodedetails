@@ -43,8 +43,8 @@ npm run dev
 ## Configuration
 
 All settings live in [`src/config/site.ts`](src/config/site.ts) and can be overridden with
-environment variables — in CI these come from **GitHub → Settings → Secrets and variables →
-Actions → Variables**. Empty values switch the feature off cleanly.
+environment variables — for production set them in **Netlify → Project configuration →
+Environment variables**. Empty values switch the feature off cleanly.
 
 | Variable | Purpose |
 |---|---|
@@ -57,13 +57,13 @@ Actions → Variables**. Empty values switch the feature off cleanly.
 | `INDEXNOW_KEY` | IndexNow key (default provided) |
 | `CONTACT_EMAIL`, `TWITTER_HANDLE` | Optional contact details |
 
-Secrets used by the workflow: `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID`, optional `DATA_RELEASE_URL`.
-
 ## Deployment
 
-Pushing to `main` runs `.github/workflows/build-and-deploy.yml`: data pipeline → Astro build →
-`netlify deploy --prod` → IndexNow. Netlify's own builds are disabled (`ignore = "exit 0"`).
-Run the workflow manually with **Submit ALL URLs** checked after large content changes.
+Netlify builds the site itself (`netlify.toml`): `python3 scripts/build_data.py && npx astro build`,
+using the bundled `data/pseo_zipcodes_full.json.gz`. The GitHub workflow is a build check for
+pushes/PRs and pings IndexNow on `main`; it can also deploy when the repository variable
+`DEPLOY_WITH_ACTIONS=true` and valid `NETLIFY_AUTH_TOKEN` / `NETLIFY_SITE_ID` secrets exist.
+Run it manually with **Submit ALL URLs** checked after large content changes.
 
 ## Data
 
