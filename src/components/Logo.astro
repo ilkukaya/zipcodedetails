@@ -1,0 +1,19 @@
+---
+interface Props {
+  inverted?: boolean;
+  class?: string;
+}
+const { inverted = false, class: cls = '' } = Astro.props;
+---
+
+<span class={`inline-flex items-center gap-2 ${cls}`}>
+  <span
+    class={`inline-flex h-8 items-center rounded-[5px] px-1.5 font-mono text-[0.8rem] font-semibold tracking-wide ${
+      inverted ? 'bg-paper text-ink' : 'bg-ink text-paper'
+    }`}
+    aria-hidden="true"
+  >ZIP</span>
+  <span class={`font-display text-[1.2rem] font-semibold leading-none tracking-tight ${inverted ? 'text-paper' : 'text-ink'}`}>
+    CodeDetails
+  </span>
+</span>

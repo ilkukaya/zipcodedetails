@@ -1,40 +1,106 @@
-export interface ZipData {
-  zip: string;
-  city: string;
-  state: string;
-  state_full: string;
-  county: string;
-  timezone: string;
+import { SITE } from '../config/site';
+import { abs } from './url';
+
+export interface FAQ {
+  question: string;
+  answer: string;
 }
 
-export function zipPageTitle(data: ZipData): string {
-  return `ZIP Code ${data.zip} — ${data.city}, ${data.state_full} | ZIPCodeDetails.com`;
+export function faqSchema(faqs: FAQ[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((f) => ({
+      '@type': 'Question',
+      name: f.question,
+      acceptedAnswer: { '@type': 'Answer', text: f.answer },
+    })),
+  };
 }
 
-export function zipPageDescription(data: ZipData): string {
-  return `ZIP code ${data.zip} is in ${data.city}, ${data.state_full} (${data.county}). View location, time zone, coordinates, and nearby ZIP codes.`;
+export interface Crumb {
+  name: string;
+  path: string;
 }
 
-export function statePageTitle(stateFull: string, stateAbbr: string, count: number): string {
-  return `${stateFull} ZIP Codes — All ${count.toLocaleString()} ZIP Codes | ZIPCodeDetails.com`;
+export function breadcrumbSchema(items: Crumb[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((c, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: c.name,
+      item: abs(c.path),
+    })),
+  };
 }
 
-export function statePageDescription(stateFull: string, count: number): string {
-  return `Browse all ${count.toLocaleString()} ZIP codes in ${stateFull}. View county, city, time zone, and geographic data for every ZIP code in ${stateFull}.`;
+export const ORG_ID = `${SITE.url}/#organization`;
+export const WEBSITE_ID = `${SITE.url}/#website`;
+
+export function organizationSchema() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    '@id': ORG_ID,
+    name: SITE.brand,
+    url: SITE.url + '/',
+    logo: {
+      '@type': 'ImageObject',
+      url: `${SITE.url}/icon-512.png`,
+      width: 512,
+      height: 512,
+    },
+    sameAs: [SITE.repo],
+  };
 }
 
-export function cityPageTitle(city: string, state: string): string {
-  return `${city}, ${state} ZIP Codes — All ZIP Codes in ${city} | ZIPCodeDetails.com`;
+export function websiteSchema() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': WEBSITE_ID,
+    name: SITE.brand,
+    alternateName: SITE.name,
+    url: SITE.url + '/',
+    description: SITE.description,
+    inLanguage: 'en-US',
+    publisher: { '@id': ORG_ID },
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: { '@type': 'EntryPoint', urlTemplate: `${SITE.url}/search/?q={search_term_string}` },
+      'query-input': 'required name=search_term_string',
+    },
+  };
 }
 
-export function cityPageDescription(city: string, stateFull: string, count: number): string {
-  return `Find all ${count} ZIP code${count !== 1 ? 's' : ''} for ${city}, ${stateFull}. View location, county, time zone, and geographic data for each ZIP code.`;
+export function webPageSchema(opts: {
+  path: string;
+  name: string;
+  description: string;
+  dateModified: string;
+  about?: object;
+  type?: string;
+}) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': opts.type || 'WebPage',
+    '@id': abs(opts.path) + '#webpage',
+    url: abs(opts.path),
+    name: opts.name,
+    description: opts.description,
+    inLanguage: 'en-US',
+    isPartOf: { '@id': WEBSITE_ID },
+    publisher: { '@id': ORG_ID },
+    dateModified: opts.dateModified,
+    ...(opts.about ? { about: opts.about } : {}),
+  };
 }
 
-export function countyPageTitle(county: string, state: string, count: number): string {
-  return `${county}, ${state} ZIP Codes — All ${count.toLocaleString()} ZIP Codes | ZIPCodeDetails.com`;
-}
-
-export function countyPageDescription(county: string, stateFull: string, count: number): string {
-  return `Browse all ${count.toLocaleString()} ZIP codes in ${county}, ${stateFull}. View city, time zone, and geographic data for every ZIP code in ${county}.`;
+/** Trim a meta description to ~155 chars on a word boundary. */
+export function clampDescription(s: string, max = 158): string {
+  if (s.length <= max) return s;
+  const cut = s.slice(0, max - 1);
+  return cut.slice(0, cut.lastIndexOf(' ')).replace(/[,;:\s]+$/, '') + '…';
 }

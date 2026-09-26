@@ -1,72 +1,75 @@
 ---
 import Base from '../layouts/Base.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
 import SearchBox from '../components/SearchBox.astro';
-import AdSenseUnit from '../components/AdSenseUnit.astro';
-import BreadcrumbSchema from '../components/BreadcrumbSchema.astro';
+import AdSlot from '../components/AdSlot.astro';
+import { getPopular } from '../lib/data';
+import { zipUrl } from '../lib/url';
 
-const title = 'Search ZIP Codes — Free US ZIP Code Lookup | ZIPCodeDetails.com';
-const description = 'Search any US ZIP code by number, city, or state. Find location, geographic, and postal data instantly.';
-
-const breadcrumbs = [
-  { name: 'Home', url: 'https://zipcodedetails.netlify.app' },
-  { name: 'Search', url: 'https://zipcodedetails.netlify.app/search' },
+const title = 'ZIP Code Lookup – Search Any US ZIP Code, City or State';
+const description = 'Free ZIP code lookup. Search any US ZIP code to find its city, county, state, time zone and map — or type a city to see all of its ZIP codes.';
+const popular = [
+  ['90210', 'Beverly Hills, CA'], ['10001', 'New York, NY'], ['60601', 'Chicago, IL'], ['77001', 'Houston, TX'],
+  ['33101', 'Miami, FL'], ['98101', 'Seattle, WA'], ['30301', 'Atlanta, GA'], ['02108', 'Boston, MA'],
+  ['85001', 'Phoenix, AZ'], ['80202', 'Denver, CO'], ['94102', 'San Francisco, CA'], ['20001', 'Washington, DC'],
 ];
+const biggest = getPopular().slice(0, 12);
 ---
 
-<Base title={title} description={description}>
-  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <BreadcrumbSchema items={breadcrumbs} />
-
-    <div class="text-center mb-8">
-      <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Search ZIP Codes</h1>
-      <p class="text-slate-500">
-        Enter a ZIP code, city name, or state to find location details
-      </p>
+<Base title={title} description={description} headerSearch={false}>
+  <div class="wrap pt-6">
+    <Breadcrumbs items={[{ name: 'Home', path: '/' }, { name: 'ZIP code lookup', path: '/search/' }]} />
+    <div class="mx-auto mt-10 max-w-2xl">
+      <h1 class="text-center font-display text-[2.2rem] font-semibold leading-[1.1] sm:text-5xl">ZIP code lookup</h1>
+      <p class="mt-4 text-center text-[1.05rem] text-ink-2">Type a ZIP code, a city (“Austin, TX”) or a state.</p>
+      <div class="mt-8"><SearchBox size="lg" autofocus /></div>
+      <div class="mt-8" data-results aria-live="polite"></div>
     </div>
 
-    <SearchBox size="large" />
+    <AdSlot slot="top" />
 
-    <AdSenseUnit slot="search-mid-leaderboard" format="horizontal" />
-
-    <div class="mt-12">
-      <h2 class="text-lg font-semibold text-slate-900 mb-4 text-center">Popular Searches</h2>
-      <div class="flex flex-wrap justify-center gap-3">
-        {[
-          { zip: '90210', label: '90210 — Beverly Hills, CA' },
-          { zip: '10001', label: '10001 — New York, NY' },
-          { zip: '60601', label: '60601 — Chicago, IL' },
-          { zip: '77001', label: '77001 — Houston, TX' },
-          { zip: '33101', label: '33101 — Miami, FL' },
-          { zip: '98101', label: '98101 — Seattle, WA' },
-          { zip: '30301', label: '30301 — Atlanta, GA' },
-          { zip: '02101', label: '02101 — Boston, MA' },
-          { zip: '85001', label: '85001 — Phoenix, AZ' },
-          { zip: '80201', label: '80201 — Denver, CO' },
-        ].map((item) => (
-          <a
-            href={`/zip/${item.zip}`}
-            class="bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm text-slate-700 hover:border-primary/30 hover:text-primary hover:shadow-sm transition-all no-underline"
-          >
-            {item.label}
-          </a>
-        ))}
-      </div>
-    </div>
-
-    <div class="mt-16 text-center">
-      <h2 class="text-lg font-semibold text-slate-900 mb-4">Browse by State</h2>
-      <p class="text-sm text-slate-500 mb-6">
-        Or browse all ZIP codes organized by state
-      </p>
-      <a
-        href="/"
-        class="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-dark transition-colors"
-      >
-        View All States
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-      </a>
+    <div class="mx-auto mt-12 grid max-w-5xl gap-10 md:grid-cols-2">
+      <section>
+        <h2 class="h-section">Popular lookups</h2>
+        <div class="mt-4 flex flex-wrap gap-2">
+          {popular.map(([z, l]) => <a href={zipUrl(z)} class="chip"><span class="zipcode text-ink">{z}</span><span class="text-ink-3">{l}</span></a>)}
+        </div>
+      </section>
+      <section>
+        <h2 class="h-section">Most populated ZIP codes</h2>
+        <div class="mt-4 flex flex-wrap gap-2">
+          {biggest.map((r) => <a href={zipUrl(r.zip)} class="chip"><span class="zipcode text-ink">{r.zip}</span><span class="text-ink-3">{r.city}, {r.state}</span></a>)}
+        </div>
+      </section>
     </div>
   </div>
 </Base>
+
+<script>
+  import { loadIndex, search, hitUrl, esc } from '../scripts/zipindex';
+  const q = new URLSearchParams(location.search).get('q')?.trim();
+  const out = document.querySelector<HTMLElement>('[data-results]')!;
+  const input = document.querySelector<HTMLInputElement>('form[data-searchbox] input');
+  if (q) {
+    if (input) input.value = q;
+    loadIndex().then((rows) => {
+      const hits = search(rows, q, 50);
+      if (!hits.length) {
+        out.innerHTML = `<p class="rounded-lg border border-line bg-surface p-4 text-sm text-ink-2">No results for “${esc(q)}”. Try a 5-digit ZIP code or a city name, e.g. “Denver” or “Denver, CO”.</p>`;
+        return;
+      }
+      if (hits.length === 1) {
+        location.replace(hitUrl(hits[0]));
+        return;
+      }
+      out.innerHTML = `<p class="mb-3 text-sm text-ink-3">${hits.length} results for “${esc(q)}”</p><ul class="card divide-y divide-line">${hits
+        .map((h) => {
+          const label = h.kind === 'zip' ? `<span class="zipcode text-ink">${h.zip}</span> <span class="text-ink-2">${esc(h.city)}, ${h.state}</span>`
+            : h.kind === 'city' ? `<span class="font-medium text-ink">${esc(h.city)}, ${h.state}</span> <span class="text-sm text-ink-3">${h.count} ZIP${h.count === 1 ? '' : 's'}</span>`
+            : `<span class="font-medium text-ink">${esc(h.name)}</span> <span class="text-sm text-ink-3">state</span>`;
+          return `<li><a href="${hitUrl(h)}" class="flex items-center justify-between px-4 py-3 no-underline hover:bg-paper"><span>${label}</span><span aria-hidden="true" class="text-ink-4">→</span></a></li>`;
+        })
+        .join('')}</ul>`;
+    });
+  }
+</script>

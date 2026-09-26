@@ -1,0 +1,57 @@
+---
+import Prose from '../layouts/Prose.astro';
+import { getMeta } from '../lib/data';
+import { formatNumber } from '../lib/formatters';
+import { SITE } from '../config/site';
+const m = getMeta();
+const dataset = {
+  '@context': 'https://schema.org',
+  '@type': 'Dataset',
+  name: 'US ZIP code reference data (ZIPCodeDetails)',
+  description: `Location, time zone, land area and demographic data for ${m.zip_count} US standard and PO Box ZIP codes, derived from US Census Bureau and USPS public-domain data.`,
+  url: `${SITE.url}/data-sources/`,
+  license: 'https://creativecommons.org/publicdomain/zero/1.0/',
+  isAccessibleForFree: true,
+  creator: { '@type': 'Organization', name: SITE.brand, url: SITE.url + '/' },
+  spatialCoverage: { '@type': 'Place', name: 'United States' },
+  variableMeasured: ['ZIP code', 'City', 'County', 'State', 'Latitude', 'Longitude', 'Time zone', 'Land area', 'Population', 'Median household income', 'Median home value', 'Housing units'],
+  dateModified: m.built,
+};
+---
+
+<Prose title="Data Sources & Methodology – ZIPCodeDetails" description="Where ZIPCodeDetails data comes from (US Census Bureau and USPS), how we calculate rankings, distances and comparisons, and known limitations." heading="Data sources & methodology" crumb="Data sources" path="/data-sources/">
+  <script type="application/ld+json" set:html={JSON.stringify(dataset)} />
+  <p class="lead">This page explains where every number on {SITE.brand} comes from, how we process it, and where it can fall short.</p>
+
+  <h2>Coverage</h2>
+  <p>We cover {formatNumber(m.zip_count)} ZIP codes: {formatNumber(m.standard_count)} standard ZIP codes and {formatNumber(m.po_box_count)} PO Box ZIP codes across {m.state_count} states, DC and territories. Unique ZIP codes (assigned to a single organization) and military ZIP codes are not included.</p>
+
+  <h2>Sources</h2>
+  <ul>
+    <li><strong>ZIP code list, type and preferred city name:</strong> US Postal Service data.</li>
+    <li><strong>Coordinates, land and water area, boundaries:</strong> US Census Bureau ZIP Code Tabulation Area (ZCTA) gazetteer and TIGER files.</li>
+    <li><strong>Population, housing, income and home value:</strong> US Census Bureau ({SITE.dataVintage}) for ZCTAs.</li>
+    <li><strong>Time zones:</strong> IANA time zone database, matched by location.</li>
+  </ul>
+  <p>These records were compiled by the open-source <a href="https://github.com/MacHu-GWU/uszipcode-project" target="_blank" rel="noopener">uszipcode</a> project, and all are in the public domain.</p>
+
+  <h2>How we calculate things</h2>
+  <ul>
+    <li><strong>Nearby ZIP codes and distances:</strong> great-circle (haversine) distance between ZIP center points, within the same state.</li>
+    <li><strong>State comparisons:</strong> a ZIP code’s percentile is the share of ZIP codes in the same state with a lower value.</li>
+    <li><strong>City and county figures:</strong> sums of the ZIP areas assigned to that city or county. Income and home value are population- (or household-) weighted averages of ZIP-level medians — an approximation, not an official Census statistic.</li>
+    <li><strong>Rankings:</strong> income, home value and density rankings only include ZIP codes with at least 1,000 residents to avoid unreliable small-sample estimates.</li>
+    <li><strong>Home values:</strong> the source caps values at $1,000,000, shown as “$1,000,000+”.</li>
+  </ul>
+
+  <h2>Known limitations</h2>
+  <ul>
+    <li>ZCTAs approximate USPS delivery areas; they are not identical to them.</li>
+    <li>Demographic figures are survey-based estimates from the vintage shown above and do not reflect recent growth or price changes.</li>
+    <li>A ZIP code is listed under one primary city even when it serves several communities.</li>
+    <li>This site is not a substitute for official USPS address validation.</li>
+  </ul>
+
+  <h2>Reusing our data</h2>
+  <p>The underlying government data is public domain. If you cite a page, please link to it. The <a href="/llms.txt">llms.txt</a> file summarizes the site for AI assistants.</p>
+</Prose>

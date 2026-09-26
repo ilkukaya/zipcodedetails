@@ -1,62 +1,84 @@
-name: Build and Deploy zipcodedetails.com
+name: Build and Deploy
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      indexnow_all:
+        description: 'Submit ALL URLs (not just core pages) to IndexNow'
+        type: boolean
+        default: false
   schedule:
-    - cron: '0 6 15 1 *'  # Every year on January 15 at 06:00 UTC
+    - cron: '0 6 15 1 *'  # Yearly refresh, January 15 at 06:00 UTC
 
 concurrency:
   group: build-deploy
   cancel-in-progress: false
 
+# Site settings come from repository Variables (Settings → Secrets and variables →
+# Actions → Variables). Anything left unset falls back to src/config/site.ts.
+env:
+  SITE_URL: ${{ vars.SITE_URL }}
+  CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL }}
+  ADSENSE_CLIENT: ${{ vars.ADSENSE_CLIENT }}
+  ADSENSE_SLOT_TOP: ${{ vars.ADSENSE_SLOT_TOP }}
+  ADSENSE_SLOT_IN_CONTENT: ${{ vars.ADSENSE_SLOT_IN_CONTENT }}
+  ADSENSE_SLOT_SIDEBAR: ${{ vars.ADSENSE_SLOT_SIDEBAR }}
+  GA4_ID: ${{ vars.GA4_ID }}
+  CF_ANALYTICS_TOKEN: ${{ vars.CF_ANALYTICS_TOKEN }}
+  PLAUSIBLE_DOMAIN: ${{ vars.PLAUSIBLE_DOMAIN }}
+  GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
+  BING_SITE_VERIFICATION: ${{ vars.BING_SITE_VERIFICATION }}
+  YANDEX_VERIFICATION: ${{ vars.YANDEX_VERIFICATION }}
+  PINTEREST_VERIFICATION: ${{ vars.PINTEREST_VERIFICATION }}
+  INDEXNOW_KEY: ${{ vars.INDEXNOW_KEY }}
+  AFF_HOTELS_URL: ${{ vars.AFF_HOTELS_URL }}
+  AFF_MOVERS_URL: ${{ vars.AFF_MOVERS_URL }}
+  AFF_INTERNET_URL: ${{ vars.AFF_INTERNET_URL }}
+  AFF_INSURANCE_URL: ${{ vars.AFF_INSURANCE_URL }}
+  AFF_SECURITY_URL: ${{ vars.AFF_SECURITY_URL }}
+  AMAZON_TAG: ${{ vars.AMAZON_TAG }}
+  TWITTER_HANDLE: ${{ vars.TWITTER_HANDLE }}
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 
-      # ── Python data pipeline ──────────────────────────────────
+      # ── Data pipeline ─────────────────────────────────────────
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
 
       - name: Install Python dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install -r requirements.txt
+          sudo apt-get install -y -qq libarchive-tools >/dev/null
 
-      - name: Download raw data from GitHub Release
+      - name: Fetch raw data
         run: |
           mkdir -p data/raw
-          # NOTE: Set DATA_RELEASE_URL secret to the GitHub Release asset URL
-          # for pseo_zipcodes_full.json (or a .rar archive of it).
           if [ -n "${{ secrets.DATA_RELEASE_URL }}" ]; then
-            echo "Downloading data from release..."
-            curl -fsSL "${{ secrets.DATA_RELEASE_URL }}" -o data/raw/pseo_zipcodes_full.json
-            echo "Downloaded $(wc -c < data/raw/pseo_zipcodes_full.json) bytes"
-          else
-            echo "WARNING: DATA_RELEASE_URL secret not set. Skipping download."
-            echo "The build will fail unless data/raw/pseo_zipcodes_full.json already exists."
+            echo "Downloading data from DATA_RELEASE_URL…"
+            curl -fsSL "${{ secrets.DATA_RELEASE_URL }}" -o data/raw/pseo_zipcodes_full.json \
+              || { echo "Download failed — falling back to the bundled archive"; rm -f data/raw/pseo_zipcodes_full.json; }
           fi
+          # build_data.py extracts pseo_zipcodes_full.rar automatically if the JSON is missing.
 
       - name: Run data pipeline
         run: python3 scripts/build_data.py
 
       - name: Verify data files
         run: |
-          ZIP_COUNT=$(ls data/zips/*.json 2>/dev/null | wc -l)
+          ZIP_COUNT=$(ls data/zips/*.json | wc -l)
           echo "Generated $ZIP_COUNT ZIP JSON files"
-          if [ "$ZIP_COUNT" -lt 35000 ]; then
-            echo "ERROR: Expected 35000+ ZIP files but only found $ZIP_COUNT"
-            exit 1
-          fi
-          echo "state_index.json: $(wc -c < data/state_index.json) bytes"
-          echo "city_index.json:  $(wc -c < data/city_index.json) bytes"
-          echo "county_index.json: $(wc -c < data/county_index.json) bytes"
+          [ "$ZIP_COUNT" -ge 35000 ] || { echo "ERROR: expected 35000+ ZIP files"; exit 1; }
 
-      # ── Node.js build ─────────────────────────────────────────
+      # ── Site build ────────────────────────────────────────────
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -66,29 +88,30 @@ jobs:
         run: npm ci
 
       - name: Build Astro site
-        run: npm run build
+        run: npx astro build
         env:
-          NODE_OPTIONS: "--max-old-space-size=8192"
+          NODE_OPTIONS: '--max-old-space-size=8192'
 
       - name: Verify build output
         run: |
-          if [ ! -d "dist" ]; then
-            echo "ERROR: dist/ directory not found after build"
-            exit 1
-          fi
           PAGE_COUNT=$(find dist -name "*.html" | wc -l)
-          echo "Built $PAGE_COUNT HTML pages in dist/"
-          if [ "$PAGE_COUNT" -lt 35000 ]; then
-            echo "WARNING: Expected 35000+ pages but found $PAGE_COUNT"
-          fi
+          echo "Built $PAGE_COUNT HTML pages"
+          [ "$PAGE_COUNT" -ge 70000 ] || { echo "ERROR: expected 70000+ pages"; exit 1; }
+          test -f dist/zip/90210/index.html
+          test -f dist/sitemap-index.xml
+          test -f dist/robots.txt
+          test -f dist/zip-index.json
 
-      # ── Deploy to Netlify ─────────────────────────────────────
-      - name: Install Netlify CLI
-        run: npm install -g netlify-cli
-
+      # ── Deploy ────────────────────────────────────────────────
       - name: Deploy to Netlify
         run: |
+          npm install -g netlify-cli
           netlify deploy --prod --dir=dist --message "Deploy from GitHub Actions (commit ${GITHUB_SHA::7})"
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+      - name: Notify search engines (IndexNow)
+        if: success()
+        continue-on-error: true
+        run: python3 scripts/indexnow.py ${{ (github.event_name == 'workflow_dispatch' && inputs.indexnow_all) && '--all' || '' }}

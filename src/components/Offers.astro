@@ -1,0 +1,115 @@
+---
+import { affiliateUrl, amazonUrl, type AffiliateKey } from '../config/site';
+
+interface Props {
+  city: string;
+  state: string;
+  stateFull: string;
+  zip?: string;
+  lat?: number;
+  lng?: number;
+  /** Which partner cards to consider, in display order. */
+  keys?: AffiliateKey[];
+}
+
+const p = Astro.props;
+const place = p.zip ? `ZIP ${p.zip}` : `${p.city}, ${p.state}`;
+const keys = p.keys ?? ['movers', 'internet', 'insurance', 'hotels', 'security'];
+
+const copy: Record<AffiliateKey, { title: string; body: string; cta: string; icon: string }> = {
+  movers: {
+    title: 'Compare moving quotes',
+    body: `Get free quotes from licensed movers serving ${p.city}.`,
+    cta: 'Get moving quotes',
+    icon: '<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/>',
+  },
+  internet: {
+    title: 'Internet providers',
+    body: `See which internet plans are available in ${place}.`,
+    cta: 'Check availability',
+    icon: '<path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1"/>',
+  },
+  insurance: {
+    title: 'Home & auto insurance',
+    body: `Rates depend heavily on ZIP code. Compare quotes for ${p.city}, ${p.state}.`,
+    cta: 'Compare rates',
+    icon: '<path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/><path d="m9 12 2 2 4-4"/>',
+  },
+  hotels: {
+    title: `Hotels near ${place}`,
+    body: `Find places to stay close to ${p.city} and compare prices.`,
+    cta: 'See hotels on map',
+    icon: '<path d="M3 20V8M3 14h18v6M21 20v-8a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="11" r="2"/>',
+  },
+  security: {
+    title: 'Home security',
+    body: `Protect your new home in ${p.city} — compare monitored security systems.`,
+    cta: 'Compare systems',
+    icon: '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+  },
+};
+
+const cards = keys
+  .map((k) => ({ k, url: affiliateUrl(k, { zip: p.zip, city: p.city, state: p.state, stateFull: p.stateFull, lat: p.lat, lng: p.lng }), ...copy[k] }))
+  .filter((c) => c.url);
+
+const supplies = amazonUrl('moving boxes and packing supplies');
+---
+
+<section aria-labelledby="move-h" class="rounded-2xl border border-line bg-manila/60 p-5 sm:p-7">
+  <div class="flex flex-wrap items-end justify-between gap-2">
+    <div>
+      <p class="eyebrow">Moving checklist</p>
+      <h2 id="move-h" class="h-section mt-1">Moving to {p.city}, {p.state}?</h2>
+    </div>
+    {cards.length > 0 && <p class="text-xs text-ink-3">Partner links — we may earn a commission. <a href="/affiliate-disclosure/" class="link">Learn more</a></p>}
+  </div>
+
+  {cards.length > 0 && (
+    <div class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {cards.map((c) => (
+        <a
+          href={c.url}
+          target="_blank"
+          rel="sponsored noopener"
+          class="group flex flex-col rounded-xl border border-line bg-surface p-4 no-underline shadow-card transition hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-lift"
+          data-affiliate={c.k}
+        >
+          <span class="flex items-center gap-2.5">
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-brand-soft text-brand">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" set:html={c.icon} />
+            </span>
+            <span class="font-semibold text-ink">{c.title}</span>
+          </span>
+          <span class="mt-2 text-sm leading-relaxed text-ink-2">{c.body}</span>
+          <span class="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-brand">
+            {c.cta}
+            <svg class="h-4 w-4 transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+          </span>
+        </a>
+      ))}
+    </div>
+  )}
+
+  <ul class="mt-5 grid gap-x-6 gap-y-2.5 text-sm text-ink-2 sm:grid-cols-2">
+    <li class="flex gap-2">
+      <span class="text-stamp" aria-hidden="true">✓</span>
+      <span>Forward your mail with the official <a class="link" href="https://moversguide.usps.com/" target="_blank" rel="noopener">USPS change of address</a> (small identity-check fee — beware look-alike sites that charge far more).</span>
+    </li>
+    <li class="flex gap-2">
+      <span class="text-stamp" aria-hidden="true">✓</span>
+      <span>Confirm the full ZIP+4 for your new address with the <a class="link" href="https://tools.usps.com/zip-code-lookup.htm" target="_blank" rel="noopener">USPS ZIP code lookup</a>.</span>
+    </li>
+    <li class="flex gap-2">
+      <span class="text-stamp" aria-hidden="true">✓</span>
+      <span>Update your address with the IRS, DMV, your bank, and voter registration in {p.stateFull}.</span>
+    </li>
+    <li class="flex gap-2">
+      <span class="text-stamp" aria-hidden="true">✓</span>
+      <span>
+        Book utilities and internet before move-in day.
+        {supplies && <> Need boxes? <a class="link" href={supplies} target="_blank" rel="sponsored noopener">Shop packing supplies</a>.</>}
+      </span>
+    </li>
+  </ul>
+</section>

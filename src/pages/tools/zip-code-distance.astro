@@ -1,0 +1,95 @@
+---
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import FAQ from '../../components/FAQ.astro';
+import AdSlot from '../../components/AdSlot.astro';
+import { webPageSchema } from '../../lib/seo';
+import { getMeta } from '../../lib/data';
+import { abs } from '../../lib/url';
+
+const path = '/tools/zip-code-distance/';
+const title = 'ZIP Code Distance Calculator – Miles Between Two ZIP Codes';
+const description = 'Free calculator: enter two US ZIP codes to get the straight-line distance in miles and kilometers, plus a link to driving directions.';
+const faqs = [
+  { question: 'How is the distance between ZIP codes calculated?', answer: 'We use the great-circle (haversine) formula between the geographic centers of the two ZIP code areas published by the US Census Bureau. This is the straight-line “as the crow flies” distance.' },
+  { question: 'Is this the driving distance?', answer: 'No. Driving distance is usually 15–40% longer than the straight-line distance, depending on the road network. Use the directions link in the result to see the driving route.' },
+  { question: 'Why can the result differ from other calculators?', answer: 'Different sites use different center points — some use the post office location, others the population-weighted or geometric center of the ZIP area. Differences of a few miles are normal for large rural ZIP codes.' },
+];
+const appSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: 'ZIP Code Distance Calculator',
+  applicationCategory: 'UtilitiesApplication',
+  operatingSystem: 'Any',
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  url: abs(path),
+};
+---
+
+<Base title={title} description={description} path={path} jsonLd={[appSchema, webPageSchema({ path, name: title, description, dateModified: getMeta().built })]}>
+  <div class="wrap pt-6">
+    <Breadcrumbs items={[{ name: 'Home', path: '/' }, { name: 'Tools', path: '/tools/' }, { name: 'ZIP code distance', path }]} />
+    <div class="mt-6"><PageHeader eyebrow="Free tool" title="Distance between two ZIP codes" lede="Enter two 5-digit ZIP codes to see how far apart they are." /></div>
+
+    <form class="card mt-8 grid max-w-3xl gap-4 p-5 sm:grid-cols-[1fr_1fr_auto] sm:items-end sm:p-6" data-distance>
+      <label class="block">
+        <span class="eyebrow">From ZIP</span>
+        <input name="from" inputmode="numeric" pattern="\d{5}" maxlength="5" required placeholder="90210" class="zipcode mt-2 h-12 w-full rounded-lg border border-line-strong bg-surface px-4 text-lg outline-none focus:border-brand focus:ring-2 focus:ring-brand/15" />
+      </label>
+      <label class="block">
+        <span class="eyebrow">To ZIP</span>
+        <input name="to" inputmode="numeric" pattern="\d{5}" maxlength="5" required placeholder="10001" class="zipcode mt-2 h-12 w-full rounded-lg border border-line-strong bg-surface px-4 text-lg outline-none focus:border-brand focus:ring-2 focus:ring-brand/15" />
+      </label>
+      <button type="submit" class="btn-primary h-12 px-6">Calculate</button>
+    </form>
+
+    <div class="mt-6 max-w-3xl" data-result aria-live="polite"></div>
+
+    <AdSlot slot="top" />
+    <div class="mt-12 max-w-3xl"><FAQ faqs={faqs} heading="About this calculator" /></div>
+  </div>
+</Base>
+
+<script>
+  import { loadIndex, haversine, esc } from '../../scripts/zipindex';
+  const form = document.querySelector<HTMLFormElement>('[data-distance]')!;
+  const out = document.querySelector<HTMLElement>('[data-result]')!;
+  const params = new URLSearchParams(location.search);
+  (form.elements.namedItem('from') as HTMLInputElement).value = params.get('from') || '';
+  (form.elements.namedItem('to') as HTMLInputElement).value = params.get('to') || '';
+
+  async function run() {
+    const a = (form.elements.namedItem('from') as HTMLInputElement).value.trim();
+    const b = (form.elements.namedItem('to') as HTMLInputElement).value.trim();
+    if (!/^\d{5}$/.test(a) || !/^\d{5}$/.test(b)) return;
+    out.innerHTML = '<p class="text-sm text-ink-3">Calculating…</p>';
+    const rows = await loadIndex();
+    const ra = rows.find((r) => r[0] === a);
+    const rb = rows.find((r) => r[0] === b);
+    if (!ra || !rb) {
+      out.innerHTML = `<p class="rounded-lg border border-stamp/30 bg-stamp-soft p-4 text-sm text-ink">We couldn’t find ${esc(!ra ? a : b)}. Check the ZIP code and try again.</p>`;
+      return;
+    }
+    const mi = haversine(ra[3], ra[4], rb[3], rb[4]);
+    const km = mi * 1.609344;
+    const dir = `https://www.google.com/maps/dir/?api=1&origin=${ra[3]},${ra[4]}&destination=${rb[3]},${rb[4]}`;
+    out.innerHTML = `
+      <div class="card p-6">
+        <p class="eyebrow">Straight-line distance</p>
+        <p class="mt-2 font-display text-5xl font-semibold text-ink num">${mi < 10 ? mi.toFixed(1) : Math.round(mi).toLocaleString()} <span class="text-2xl text-ink-3">miles</span></p>
+        <p class="mt-1 text-ink-3 num">${km < 10 ? km.toFixed(1) : Math.round(km).toLocaleString()} km</p>
+        <div class="mt-5 grid gap-3 sm:grid-cols-2">
+          <a href="/zip/${ra[0]}/" class="rounded-lg border border-line p-3 no-underline hover:border-brand/40"><span class="zipcode text-ink">${ra[0]}</span><span class="block text-sm text-ink-3">${esc(ra[1])}, ${ra[2]}</span></a>
+          <a href="/zip/${rb[0]}/" class="rounded-lg border border-line p-3 no-underline hover:border-brand/40"><span class="zipcode text-ink">${rb[0]}</span><span class="block text-sm text-ink-3">${esc(rb[1])}, ${rb[2]}</span></a>
+        </div>
+        <a href="${dir}" target="_blank" rel="noopener nofollow" class="btn-ghost mt-5">Driving directions ↗</a>
+      </div>`;
+    history.replaceState(null, '', `?from=${a}&to=${b}`);
+  }
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    run();
+  });
+  if (params.get('from') && params.get('to')) run();
+</script>

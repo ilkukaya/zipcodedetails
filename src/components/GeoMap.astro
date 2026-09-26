@@ -1,0 +1,159 @@
+---
+interface Point {
+  lat: number;
+  lng: number;
+  label: string;
+  href?: string;
+}
+interface Props {
+  lat: number;
+  lng: number;
+  zoom?: number;
+  bounds?: { west: number; east: number; north: number; south: number } | null;
+  points?: Point[];
+  title: string;
+  class?: string;
+  aspect?: string;
+}
+const { lat, lng, zoom = 11, bounds = null, points = [], title, class: cls = '', aspect = 'aspect-[4/3]' } = Astro.props;
+const gmaps = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+const osm = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=${zoom}/${lat}/${lng}`;
+---
+
+<figure class={`overflow-hidden rounded-xl border border-line bg-surface ${cls}`}>
+  <div
+    class={`geo-map relative w-full ${aspect} bg-[#EEF0EC]`}
+    data-lat={lat}
+    data-lng={lng}
+    data-zoom={zoom}
+    data-bounds={bounds ? JSON.stringify(bounds) : ''}
+    data-points={points.length ? JSON.stringify(points) : ''}
+    role="img"
+    aria-label={`Map: ${title}`}
+  >
+    <div class="absolute inset-0 grid place-items-center text-sm text-ink-3" data-map-placeholder>
+      <span class="inline-flex items-center gap-2">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></svg>
+        Loading map…
+      </span>
+    </div>
+  </div>
+  <figcaption class="flex flex-wrap items-center justify-between gap-2 border-t border-line px-4 py-2.5 text-xs text-ink-3">
+    <span class="truncate">{title}</span>
+    <span class="flex gap-3">
+      <a href={gmaps} target="_blank" rel="noopener nofollow" class="link">Google Maps</a>
+      <a href={osm} target="_blank" rel="noopener nofollow" class="link">OpenStreetMap</a>
+    </span>
+  </figcaption>
+</figure>
+
+<script>
+  const CSS = 'https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css';
+  const JS = 'https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js';
+  const STYLE = 'https://tiles.openfreemap.org/styles/positron';
+  let lib: Promise<any> | null = null;
+
+  function loadLib(): Promise<any> {
+    if (lib) return lib;
+    lib = new Promise((resolve, reject) => {
+      const l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = CSS;
+      document.head.appendChild(l);
+      const s = document.createElement('script');
+      s.src = JS;
+      s.async = true;
+      s.onload = () => resolve((window as any).maplibregl);
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+    return lib;
+  }
+
+  async function draw(el: HTMLElement) {
+    let ml: any;
+    try {
+      ml = await loadLib();
+    } catch {
+      const ph = el.querySelector('[data-map-placeholder]');
+      if (ph) ph.textContent = 'Map unavailable — use the links below.';
+      return;
+    }
+    const lat = parseFloat(el.dataset.lat!);
+    const lng = parseFloat(el.dataset.lng!);
+    const bounds = el.dataset.bounds ? JSON.parse(el.dataset.bounds) : null;
+    const points: { lat: number; lng: number; label: string; href?: string }[] = el.dataset.points ? JSON.parse(el.dataset.points) : [];
+
+    const map = new ml.Map({
+      container: el,
+      style: STYLE,
+      center: [lng, lat],
+      zoom: parseFloat(el.dataset.zoom || '11'),
+      attributionControl: { compact: true },
+      cooperativeGestures: true,
+      dragRotate: false,
+      pitchWithRotate: false,
+    });
+    map.addControl(new ml.NavigationControl({ showCompass: false }), 'top-right');
+
+    map.on('load', () => {
+      el.querySelector('[data-map-placeholder]')?.remove();
+      if (bounds) {
+        const ring = [
+          [bounds.west, bounds.south], [bounds.east, bounds.south],
+          [bounds.east, bounds.north], [bounds.west, bounds.north], [bounds.west, bounds.south],
+        ];
+        map.addSource('bbox', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [ring] } } });
+        map.addLayer({ id: 'bbox-fill', type: 'fill', source: 'bbox', paint: { 'fill-color': '#2344A6', 'fill-opacity': 0.07 } });
+        map.addLayer({ id: 'bbox-line', type: 'line', source: 'bbox', paint: { 'line-color': '#2344A6', 'line-width': 1.5, 'line-dasharray': [2, 2] } });
+        map.fitBounds([[bounds.west, bounds.south], [bounds.east, bounds.north]], { padding: 36, maxZoom: 14, duration: 0 });
+      }
+      if (points.length) {
+        map.addSource('pts', {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: points.map((p) => ({ type: 'Feature', properties: { label: p.label, href: p.href || '' }, geometry: { type: 'Point', coordinates: [p.lng, p.lat] } })),
+          },
+        });
+        map.addLayer({ id: 'pts', type: 'circle', source: 'pts', paint: { 'circle-radius': 6, 'circle-color': '#C8412B', 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } });
+        map.addLayer({
+          id: 'pts-label', type: 'symbol', source: 'pts',
+          layout: { 'text-field': ['get', 'label'], 'text-size': 11, 'text-offset': [0, 1.2], 'text-anchor': 'top', 'text-font': ['Noto Sans Regular'] },
+          paint: { 'text-color': '#142033', 'text-halo-color': '#fff', 'text-halo-width': 1.2 },
+        });
+        map.on('click', 'pts', (e: any) => {
+          const href = e.features?.[0]?.properties?.href;
+          if (href) location.href = href;
+        });
+        map.on('mouseenter', 'pts', () => (map.getCanvas().style.cursor = 'pointer'));
+        map.on('mouseleave', 'pts', () => (map.getCanvas().style.cursor = ''));
+        if (points.length > 1 && !bounds) {
+          const b = new ml.LngLatBounds();
+          points.forEach((p) => b.extend([p.lng, p.lat]));
+          map.fitBounds(b, { padding: 48, maxZoom: 12, duration: 0 });
+        }
+      } else {
+        new ml.Marker({ color: '#C8412B' }).setLngLat([lng, lat]).addTo(map);
+      }
+    });
+  }
+
+  const maps = document.querySelectorAll<HTMLElement>('.geo-map');
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            io.unobserve(e.target);
+            draw(e.target as HTMLElement);
+          }
+        }
+      },
+      { rootMargin: '300px' }
+    );
+    maps.forEach((m) => io.observe(m));
+  } else {
+    maps.forEach((m) => draw(m));
+  }
+</script>

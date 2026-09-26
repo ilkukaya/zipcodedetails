@@ -1,0 +1,126 @@
+@import '@fontsource-variable/public-sans/wght.css';
+@import '@fontsource-variable/source-serif-4/wght.css';
+@import '@fontsource/ibm-plex-mono/latin-500.css';
+@import '@fontsource/ibm-plex-mono/latin-600.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    scroll-padding-top: 5rem;
+  }
+  body {
+    @apply bg-paper text-ink font-sans antialiased;
+    font-feature-settings: 'ss01', 'cv11';
+  }
+  h1, h2, h3 {
+    @apply font-display text-ink;
+    font-optical-sizing: auto;
+    letter-spacing: -0.01em;
+  }
+  a {
+    @apply text-brand;
+  }
+  :focus-visible {
+    outline: 2px solid theme('colors.brand.DEFAULT');
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  ::selection {
+    background: theme('colors.manila.DEFAULT');
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Airmail envelope edge — the site's signature motif */
+  .airmail {
+    background: repeating-linear-gradient(
+      -45deg,
+      theme('colors.stamp.DEFAULT') 0 12px,
+      transparent 12px 20px,
+      theme('colors.brand.DEFAULT') 20px 32px,
+      transparent 32px 40px
+    );
+  }
+  .wrap {
+    @apply mx-auto w-full max-w-page px-4 sm:px-6 lg:px-8;
+  }
+  .card {
+    @apply rounded-xl border border-line bg-surface shadow-card;
+  }
+  .eyebrow {
+    @apply font-mono text-[0.72rem] font-medium uppercase tracking-[0.12em] text-ink-3;
+  }
+  .h-section {
+    @apply font-display text-[1.45rem] font-semibold leading-tight text-ink sm:text-[1.6rem];
+  }
+  .link {
+    @apply text-brand underline decoration-brand/30 underline-offset-[3px] transition-colors hover:decoration-brand;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-sm text-ink-2 no-underline transition hover:border-brand/40 hover:text-brand;
+  }
+  .zipcode {
+    @apply font-mono font-semibold tracking-tight;
+    font-variant-numeric: tabular-nums;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold no-underline transition;
+  }
+  .btn-primary {
+    @apply btn bg-ink text-white hover:bg-brand-dark;
+  }
+  .btn-ghost {
+    @apply btn border border-line bg-surface text-ink hover:border-ink/30;
+  }
+  .data-table {
+    @apply w-full text-left text-sm;
+  }
+  .data-table th {
+    @apply sticky top-0 z-[1] border-b border-line-strong bg-paper px-3 py-2.5 font-mono text-[0.7rem] font-medium uppercase tracking-[0.1em] text-ink-3;
+  }
+  .data-table th button {
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: inherit;
+  }
+  .data-table th button:hover {
+    @apply text-ink;
+  }
+  .data-table td {
+    @apply border-b border-line px-3 py-2.5 align-top text-ink-2;
+  }
+  .data-table tr:last-child td {
+    @apply border-b-0;
+  }
+  .data-table tbody tr:hover td {
+    @apply bg-paper/60;
+  }
+  .lz {
+    @apply zipcode text-brand no-underline hover:underline;
+  }
+  .lm {
+    @apply text-ink-2 no-underline hover:text-brand hover:underline;
+  }
+  .lf {
+    @apply text-paper/75 no-underline hover:text-white;
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+}

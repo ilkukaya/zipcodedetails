@@ -1,0 +1,22 @@
+---
+import { breadcrumbSchema, type Crumb } from '../lib/seo';
+
+interface Props {
+  items: Crumb[];
+}
+const { items } = Astro.props;
+---
+
+<nav aria-label="Breadcrumb" class="text-[0.82rem] text-ink-3">
+  <ol class="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+    {items.map((c, i) => (
+      <li class="flex items-center gap-1.5">
+        {i > 0 && <span aria-hidden="true" class="text-ink-4">/</span>}
+        {i < items.length - 1
+          ? <a href={c.path} class="text-ink-3 no-underline hover:text-brand hover:underline">{c.name}</a>
+          : <span aria-current="page" class="text-ink-2">{c.name}</span>}
+      </li>
+    ))}
+  </ol>
+</nav>
+<script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema(items))} />

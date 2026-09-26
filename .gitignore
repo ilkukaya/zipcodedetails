@@ -36,9 +36,12 @@ data/city_index.json
 data/county_index.json
 data/search_index.json
 data/popular_zips.json
+data/rankings.json
+data/meta.json
 
 # Generated public assets
 public/search_index.json
+public/zip-index.json
 public/_redirects
 
 # Astro

@@ -1,0 +1,61 @@
+---
+import Base from './Base.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import FAQ from '../components/FAQ.astro';
+import AdSlot from '../components/AdSlot.astro';
+import SearchBox from '../components/SearchBox.astro';
+import { GUIDES } from '../lib/guides';
+import { getMeta } from '../lib/data';
+import { SITE } from '../config/site';
+import { abs } from '../lib/url';
+import { ORG_ID, type FAQ as FAQItem } from '../lib/seo';
+
+interface Props {
+  slug: string;
+  description: string;
+  faqs?: FAQItem[];
+}
+const { slug, description, faqs = [] } = Astro.props;
+const g = GUIDES.find((x) => x.slug === slug)!;
+const path = `/guides/${slug}/`;
+const modified = getMeta().built;
+const article = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: g.title,
+  description,
+  url: abs(path),
+  mainEntityOfPage: abs(path),
+  datePublished: g.published,
+  dateModified: modified,
+  author: { '@type': 'Organization', name: `${SITE.brand} editorial team`, url: abs('/about/') },
+  publisher: { '@id': ORG_ID },
+  image: `${SITE.url}/og-default.png`,
+  inLanguage: 'en-US',
+};
+const others = GUIDES.filter((x) => x.slug !== slug);
+---
+
+<Base title={g.title} description={description} path={path} ogType="article" jsonLd={article}>
+  <div class="wrap pt-6">
+    <Breadcrumbs items={[{ name: 'Home', path: '/' }, { name: 'Guides', path: '/guides/' }, { name: g.short, path }]} />
+    <div class="mt-8 grid gap-12 lg:grid-cols-[minmax(0,1fr)_18rem]">
+      <article class="prose prose-lg max-w-none prose-headings:scroll-mt-24 prose-h2:mt-12 prose-table:text-base">
+        <p class="eyebrow !mb-0 not-prose">Guide · Updated {modified}</p>
+        <slot />
+      </article>
+      <aside class="space-y-6">
+        <div class="card p-5 lg:sticky lg:top-24">
+          <p class="eyebrow">Look up a ZIP</p>
+          <div class="mt-3"><SearchBox size="sm" /></div>
+          <p class="eyebrow mt-6">More guides</p>
+          <ul class="mt-3 space-y-2.5 text-sm">
+            {others.map((o) => <li><a href={`/guides/${o.slug}/`} class="link">{o.short}</a></li>)}
+          </ul>
+        </div>
+      </aside>
+    </div>
+    <AdSlot slot="inContent" />
+    {faqs.length > 0 && <div class="mt-12 max-w-4xl"><FAQ faqs={faqs} /></div>}
+  </div>
+</Base>

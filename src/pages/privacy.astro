@@ -1,72 +1,40 @@
 ---
-import Base from '../layouts/Base.astro';
-import BreadcrumbSchema from '../components/BreadcrumbSchema.astro';
-
-const title = 'Privacy Policy — ZIPCodeDetails.com';
-const description = 'Privacy Policy for ZIPCodeDetails.com. Learn how we handle visitor data, cookies, and third-party services.';
-
-const siteUrl = Astro.site?.origin || 'https://zipcodedetails.netlify.app';
-const breadcrumbs = [
-  { name: 'Home', url: siteUrl },
-  { name: 'Privacy Policy', url: `${siteUrl}/privacy` },
-];
+import Prose from '../layouts/Prose.astro';
+import { SITE, ADS, ANALYTICS } from '../config/site';
+const updated = '2026-09-26';
 ---
 
-<Base title={title} description={description}>
-  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <BreadcrumbSchema items={breadcrumbs} />
+<Prose title="Privacy Policy – ZIPCodeDetails" description="How ZIPCodeDetails handles data, cookies, advertising and analytics, and the choices you have." heading="Privacy policy" crumb="Privacy" path="/privacy/">
+  <p><em>Last updated {updated}</em></p>
+  <p>{SITE.brand} (“we”, “us”) respects your privacy. This policy explains what information is collected when you use this website and how you can control it.</p>
 
-    <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-6">Privacy Policy</h1>
-    <p class="text-sm text-slate-500 mb-8">Last updated: April 2026</p>
+  <h2>Information we collect</h2>
+  <ul>
+    <li><strong>You don’t need an account.</strong> We do not ask for your name or email to use the site.</li>
+    <li><strong>Contact form.</strong> If you contact us, we receive the name, email and message you submit, and use them only to reply.</li>
+    <li><strong>Location tools.</strong> “What’s my ZIP code?” asks your browser for your location only when you press the button. The matching happens on your device; your coordinates are never sent to us.</li>
+    <li><strong>Server logs.</strong> Our hosting provider (Netlify) processes standard technical data such as IP address and browser type to deliver and secure the site.</li>
+  </ul>
 
-    <div class="prose prose-slate max-w-none">
-      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Introduction</h2>
-      <p class="text-slate-600 leading-relaxed">
-        ZIPCodeDetails.com ("we", "us", or "our") operates the website
-        <a href="https://zipcodedetails.netlify.app" class="text-primary hover:underline">zipcodedetails.com</a>.
-        This page informs you of our policies regarding the collection, use, and
-        disclosure of information when you visit our site.
-      </p>
+  <h2>Cookies, analytics and advertising</h2>
+  <p>We use third-party services that may set cookies or use similar technologies:</p>
+  <ul>
+    <li><strong>Analytics.</strong> We may use privacy-friendly analytics{ANALYTICS.ga4 ? ' and Google Analytics' : ''} to understand which pages are useful. This data is aggregated and not used to identify you.</li>
+    <li><strong>Advertising.</strong> {ADS.adsenseClient ? 'We show ads served by Google AdSense.' : 'We may show ads served by Google AdSense.'} Third-party vendors, including Google, use cookies to serve ads based on your prior visits to this and other websites. Google’s use of advertising cookies enables it and its partners to serve ads based on your visits to this and/or other sites on the Internet. You can opt out of personalized advertising at <a href="https://adssettings.google.com" target="_blank" rel="noopener">Google Ads Settings</a> or <a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener">aboutads.info</a>. Learn <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">how Google uses information from sites that use its services</a>.</li>
+    <li><strong>Partner links.</strong> Some links go to partners who may pay us a commission. Those partners may set cookies to attribute the referral. See our <a href="/affiliate-disclosure/">affiliate disclosure</a>.</li>
+    <li><strong>Maps.</strong> Map tiles are loaded from OpenFreeMap and the map library from jsDelivr; these services receive your IP address to deliver the files.</li>
+  </ul>
+  <p>Where required by law (for example in the EEA, UK and Switzerland), a consent message is shown before personalized ads or non-essential cookies are used.</p>
 
-      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Information We Collect</h2>
-      <p class="text-slate-600 leading-relaxed">
-        We do not collect personal information such as names, email addresses, or
-        phone numbers. We do not require user registration or accounts.
-      </p>
+  <h2>Your rights</h2>
+  <p>Depending on where you live (for example under the GDPR or the California Consumer Privacy Act), you may have the right to access, correct or delete personal data, and to opt out of the “sale” or “sharing” of personal information for advertising. We do not sell personal information for money. To exercise any right, <a href="/contact/">contact us</a>. You can also block or delete cookies in your browser settings.</p>
 
-      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Analytics</h2>
-      <p class="text-slate-600 leading-relaxed">
-        We use <a href="https://plausible.io/" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">Plausible Analytics</a>,
-        a privacy-focused analytics service. Plausible does not use cookies, does not
-        collect personal data, and is fully compliant with GDPR, CCPA, and PECR.
-      </p>
+  <h2>Children</h2>
+  <p>This site is intended for a general audience and is not directed to children under 13. We do not knowingly collect personal information from children.</p>
 
-      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Advertising</h2>
-      <p class="text-slate-600 leading-relaxed">
-        We use Google AdSense to display advertisements. Google AdSense may use cookies
-        and web beacons to serve ads based on your prior visits. You may opt out of
-        personalized advertising by visiting
-        <a href="https://www.google.com/settings/ads" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">Google Ads Settings</a>.
-      </p>
+  <h2>Changes</h2>
+  <p>We may update this policy; the date at the top shows the latest revision.</p>
 
-      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Cookies</h2>
-      <p class="text-slate-600 leading-relaxed">
-        Our site itself does not set cookies. However, third-party services such as
-        Google AdSense may set cookies on your browser. You can control cookie
-        settings through your browser preferences.
-      </p>
-
-      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Children's Privacy</h2>
-      <p class="text-slate-600 leading-relaxed">
-        Our site is not directed at children under the age of 13. We do not
-        knowingly collect personal information from children.
-      </p>
-
-      <h2 class="text-xl font-semibold text-slate-900 mt-8 mb-4">Contact</h2>
-      <p class="text-slate-600 leading-relaxed">
-        If you have questions about this Privacy Policy, please contact us via our
-        <a href="https://github.com/ilkukaya/zipcodedetails" rel="nofollow noopener" target="_blank" class="text-primary hover:underline">GitHub repository</a>.
-      </p>
-    </div>
-  </div>
-</Base>
+  <h2>Contact</h2>
+  <p>Questions about privacy? Use our <a href="/contact/">contact form</a>{SITE.contactEmail && <> or email <a href={`mailto:${SITE.contactEmail}`}>{SITE.contactEmail}</a></>}.</p>
+</Prose>

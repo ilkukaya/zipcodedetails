@@ -1,0 +1,46 @@
+---
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import { getRankings, getStates } from '../../lib/data';
+import { RANKING_PAGES } from '../../lib/rankings';
+import { formatMoney, formatNumber, formatArea } from '../../lib/formatters';
+import { topUrl } from '../../lib/url';
+
+const r = getRankings().national;
+const states = Object.entries(getStates()).sort((a, b) => a[1].name.localeCompare(b[1].name));
+const lead = (key: string) => {
+  const row = (r as any)[key]?.[0];
+  if (!row) return '';
+  const v = key === 'income' ? formatMoney(row.median_household_income)
+    : key === 'home_value' ? formatMoney(row.median_home_value)
+    : key === 'population' ? formatNumber(row.population)
+    : key === 'density' ? `${formatNumber(Math.round(row.population_density))}/sq mi`
+    : formatArea(row.land_area_sqmi);
+  return `#1: ${row.zip} ${row.city}, ${row.state} · ${v}`;
+};
+const title = 'US ZIP Code Rankings – Richest, Most Expensive, Most Populated';
+const description = 'Ranked lists of US ZIP codes by household income, home value, population, density and land area, nationally and for every state.';
+---
+
+<Base title={title} description={description}>
+  <div class="wrap pt-6">
+    <Breadcrumbs items={[{ name: 'Home', path: '/' }, { name: 'Rankings', path: '/rankings/' }]} />
+    <div class="mt-6"><PageHeader eyebrow="Rankings" title="US ZIP code rankings" lede={description} /></div>
+    <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {RANKING_PAGES.map((p) => (
+        <a href={`/rankings/${p.slug}/`} class="card group p-6 no-underline transition hover:-translate-y-0.5 hover:shadow-lift">
+          <p class="font-display text-xl font-semibold text-ink group-hover:text-brand">{p.short}</p>
+          <p class="mt-2 text-sm text-ink-2">{p.intro.split('.')[0]}.</p>
+          <p class="mt-4 font-mono text-xs text-ink-3">{lead(p.key)}</p>
+        </a>
+      ))}
+    </div>
+    <section class="mt-14">
+      <h2 class="h-section">Top ZIP codes by state</h2>
+      <div class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+        {states.map(([abbr, s]) => <a href={topUrl(abbr)} class="rounded-lg border border-line bg-surface px-4 py-2.5 text-sm text-ink-2 no-underline hover:border-brand/40 hover:text-brand">{s.name}</a>)}
+      </div>
+    </section>
+  </div>
+</Base>
