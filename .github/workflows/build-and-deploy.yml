@@ -1,8 +1,14 @@
 name: Build and Deploy
 
+# Netlify builds and deploys the site itself (see netlify.toml). This workflow
+# verifies every push/PR builds cleanly, pings IndexNow for main, and can
+# optionally deploy from Actions when the repository variable
+# DEPLOY_WITH_ACTIONS is 'true' (requires valid NETLIFY_* secrets).
+
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
     inputs:
       indexnow_all:
@@ -57,17 +63,6 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install -r requirements.txt
-          sudo apt-get install -y -qq libarchive-tools >/dev/null
-
-      - name: Fetch raw data
-        run: |
-          mkdir -p data/raw
-          if [ -n "${{ secrets.DATA_RELEASE_URL }}" ]; then
-            echo "Downloading data from DATA_RELEASE_URL…"
-            curl -fsSL "${{ secrets.DATA_RELEASE_URL }}" -o data/raw/pseo_zipcodes_full.json \
-              || { echo "Download failed — falling back to the bundled archive"; rm -f data/raw/pseo_zipcodes_full.json; }
-          fi
-          # build_data.py extracts pseo_zipcodes_full.rar automatically if the JSON is missing.
 
       - name: Run data pipeline
         run: python3 scripts/build_data.py
@@ -81,7 +76,7 @@ jobs:
       # ── Site build ────────────────────────────────────────────
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install Node dependencies
@@ -104,6 +99,7 @@ jobs:
 
       # ── Deploy ────────────────────────────────────────────────
       - name: Deploy to Netlify
+        if: github.event_name != 'pull_request' && vars.DEPLOY_WITH_ACTIONS == 'true'
         run: |
           npm install -g netlify-cli
           netlify deploy --prod --dir=dist --message "Deploy from GitHub Actions (commit ${GITHUB_SHA::7})"
@@ -112,6 +108,6 @@ jobs:
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 
       - name: Notify search engines (IndexNow)
-        if: success()
+        if: success() && github.event_name != 'pull_request'
         continue-on-error: true
         run: python3 scripts/indexnow.py ${{ (github.event_name == 'workflow_dispatch' && inputs.indexnow_all) && '--all' || '' }}

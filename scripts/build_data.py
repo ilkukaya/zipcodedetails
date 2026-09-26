@@ -4,7 +4,7 @@ build_data.py
 
 Single data pipeline for ZIPCodeDetails.
 Input:  data/raw/pseo_zipcodes_full.json
-        (auto-extracted from ./pseo_zipcodes_full.rar when missing)
+        (falls back to data/pseo_zipcodes_full.json.gz, then ./pseo_zipcodes_full.rar)
 Output: data/zips/<zip>.json        one record per ZIP, enriched with state context
         data/state_index.json       per-state aggregates
         data/city_index.json        per-city aggregates + nearby cities
@@ -17,6 +17,7 @@ Output: data/zips/<zip>.json        one record per ZIP, enriched with state cont
         public/_redirects           Netlify city-slug redirects
 """
 
+import gzip
 import json
 import math
 import shutil
@@ -36,6 +37,7 @@ except ImportError:
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 RAW_DATA = PROJECT_ROOT / "data" / "raw" / "pseo_zipcodes_full.json"
+RAW_GZIP = PROJECT_ROOT / "data" / "pseo_zipcodes_full.json.gz"
 RAW_ARCHIVE = PROJECT_ROOT / "pseo_zipcodes_full.rar"
 ZIPS_DIR = PROJECT_ROOT / "data" / "zips"
 DATA_DIR = PROJECT_ROOT / "data"
@@ -210,6 +212,11 @@ def write_json(path: Path, obj) -> None:
 
 def main() -> None:
     t0 = time.time()
+    if not RAW_DATA.exists() and RAW_GZIP.exists():
+        print(f"Using bundled {RAW_GZIP.relative_to(PROJECT_ROOT)}")
+        RAW_DATA.parent.mkdir(parents=True, exist_ok=True)
+        with gzip.open(RAW_GZIP, "rb") as src, open(RAW_DATA, "wb") as dst:
+            shutil.copyfileobj(src, dst)
     ensure_raw_data()
 
     if not RAW_DATA.exists():
